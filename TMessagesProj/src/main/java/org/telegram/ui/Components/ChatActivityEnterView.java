@@ -659,6 +659,8 @@ public class ChatActivityEnterView extends FrameLayout implements
     protected View topView;
     private BotKeyboardView botKeyboardView;
     private ImageView notifyButton;
+    /** Форк: кнопка AI-перекладу тексту перед відправкою. */
+    private ImageView aiTranslateButton;
     @Nullable
     private ImageView scheduledButton;
     @Nullable
@@ -2758,6 +2760,31 @@ public class ChatActivityEnterView extends FrameLayout implements
             attachLayout.setEnabled(false);
             attachLayout.setClipChildren(false);
             messageEditTextContainer.addView(attachLayout, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, DEFAULT_HEIGHT, Gravity.BOTTOM | Gravity.RIGHT, 0, 0, DEFAULT_HEIGHT, 0));
+
+            // ── Форк: кнопка AI-перекладу ─────────────────────────────────
+            // Вся логіка в org.telegram.ai.AiTranslateUi — тут навмисно лише
+            // сама кнопка, щоб правка в цьому файлі (777 КБ) лишалась дрібною
+            // і не заважала зливати оновлення апстріму.
+            aiTranslateButton = new ImageView(context);
+            aiTranslateButton.setImageResource(R.drawable.outline_ai_translate2);
+            aiTranslateButton.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_glass_defaultIcon), PorterDuff.Mode.MULTIPLY));
+            aiTranslateButton.setScaleType(ImageView.ScaleType.CENTER);
+            aiTranslateButton.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector)));
+            aiTranslateButton.setContentDescription(getString(R.string.AiTranslateButton));
+            // Без ключа кнопка тільки заважала б: ховаємо, поки він не заданий.
+            aiTranslateButton.setVisibility(org.telegram.ai.AiConfig.isReady() ? VISIBLE : GONE);
+            attachLayout.addView(aiTranslateButton, LayoutHelper.createLinear(DEFAULT_HEIGHT, DEFAULT_HEIGHT));
+            aiTranslateButton.setOnClickListener(v -> {
+                if (parentFragment == null || messageEditText == null) {
+                    return;
+                }
+                org.telegram.ai.AiTranslateUi.translateForSending(
+                        parentFragment, dialog_id, messageEditText.getText(),
+                        translated -> {
+                            messageEditText.setText(translated);
+                            messageEditText.setSelection(messageEditText.getText().length());
+                        });
+            });
 
             if (chatMode != ChatActivity.MODE_WELCOME_MESSAGES) {
                 notifyButton = new ImageView(context);

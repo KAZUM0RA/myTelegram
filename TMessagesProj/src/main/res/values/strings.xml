@@ -2,6 +2,9 @@
 <resources>
     <string name="AppName">MyTelegram</string>
     <string name="AppNameBeta">MyTelegram Beta</string>
+    <string name="AiTranslateButton">Translate with AI</string>
+    <string name="AiTranslatePreviewTitle">Translation</string>
+    <string name="AiTranslateInsert">Insert</string>
     <string name="AiStateOn">on</string>
     <string name="AiStateNoKey">no key</string>
     <string name="AiSettingsTitle">AI assistant</string>
