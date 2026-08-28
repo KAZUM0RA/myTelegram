@@ -149,6 +149,14 @@ android {
             cmake {
                 version '3.22.1'
                 arguments '-DANDROID_STL=c++_static', '-DANDROID_PLATFORM=android-21' //, '-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON'
+                // Форк: -PUSE_CCACHE вмикає ccache для C/C++ (використовує CI).
+                // ccache кешує за хешем вмісту файлу, а не за mtime, тому
+                // переживає checkout на новому раннері — на відміну від
+                // кешування самої теки .cxx, яку ninja все одно перезбирає.
+                if (project.hasProperty('USE_CCACHE')) {
+                    arguments '-DCMAKE_C_COMPILER_LAUNCHER=ccache',
+                              '-DCMAKE_CXX_COMPILER_LAUNCHER=ccache'
+                }
                 targets 'tmessages.49'
             }
         }

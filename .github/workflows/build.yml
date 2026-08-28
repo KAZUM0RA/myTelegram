@@ -21,6 +21,8 @@ concurrency:
 env:
   NDK_VERSION: '27.2.12479018'
   CMAKE_VERSION: '3.22.1'
+  # Явно, щоб шлях у кроках cache і в самому ccache гарантовано збігався
+  CCACHE_DIR: /home/runner/.cache/ccache
 
 jobs:
   build:
@@ -47,17 +49,27 @@ jobs:
           submodules: false
 
       # Ініціалізуємо ЛИШЕ ті підмодулі, без яких не збереться:
-      #   jlatexmath           — окремий Gradle-модуль (settings.gradle)
-      #   tlottie              — заголовки для prebuild/libtlottie.a
-      #   libyuv, xiph/*       — CMake компілює їхні сирці
-      # ffmpeg, dav1d, libvpx, openh264 НЕ потрібні: їхні .a вже лежать
-      # зібраними в jni/ffmpeg/<abi>/ та jni/prebuild/<abi>/.
+      #   jlatexmath      — окремий Gradle-модуль (settings.gradle)
+      #   tlottie         — заголовки до prebuild/<abi>/libtlottie.a
+      #   libyuv, xiph/*  — CMake компілює їхні сирці
+      #   openh264        — .a теж зібраний наперед, АЛЕ webrtc-код тягне
+      #                     його заголовки: h264_encoder_impl.h включає
+      #                     third_party/openh264/codec/api/wels/codec_app_def.h,
+      #                     а сам h264_encoder_impl.cc є в voip/CMakeLists.txt
+      #
+      # НЕ ініціалізуємо (перевірено, збірці не потрібні):
+      #   ffmpeg  — заголовки лежать у дереві, в jni/ffmpeg/include
+      #   dav1d   — єдиний його споживач, dav1d_decoder.cc, закоментований
+      #             у voip/CMakeLists.txt
+      #   libvpx  — vpx/*.h трапляються лише в *_unittest.cc, які не збираються
+      # Разом це економить ~1 ГБ клонування і кілька хвилин на кожному запуску.
       - name: Ініціалізувати потрібні підмодулі
         run: |
           git submodule update --init --depth 1 --recommend-shallow \
             TMessagesProj/lib/jlatexmath \
             TMessagesProj/jni/tlottie \
             TMessagesProj/jni/third_party/libyuv \
+            TMessagesProj/jni/third_party/openh264 \
             TMessagesProj/jni/third_party/xiph/ogg \
             TMessagesProj/jni/third_party/xiph/opus \
             TMessagesProj/jni/third_party/xiph/opusfile
@@ -87,18 +99,25 @@ jobs:
         with:
           cache-read-only: ${{ github.ref != 'refs/heads/feature/ai-panel' }}
 
-      # Об'єктні файли CMake — найдорожче в збірці. Ключ прив'язаний до
-      # CMakeLists та версії NDK: змінився один із них — кеш недійсний.
-      - name: Кеш нативної збірки
-        uses: actions/cache@v4
+      - name: Встановити ccache
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq ccache
+          ccache --max-size=3G
+          ccache --zero-stats
+
+      # Кешуємо саме ccache, а не .cxx: ccache зіставляє файли за хешем
+      # вмісту, тож переживає checkout, де всі mtime свіжі.
+      # restore/save роздільні навмисно — save з `if: always()` зберігає
+      # кеш навіть коли збірка впала, і наступний запуск не компілює
+      # заново те, що вже встигло зібратись.
+      - name: Відновити кеш ccache
+        uses: actions/cache/restore@v4
+        id: ccache-restore
         with:
-          path: |
-            TMessagesProj/.cxx
-            TMessagesProj/build/intermediates/cxx
-          key: cxx-${{ runner.os }}-${{ env.NDK_VERSION }}-${{ hashFiles('TMessagesProj/jni/CMakeLists.txt') }}-${{ github.sha }}
+          path: /home/runner/.cache/ccache
+          key: ccache-${{ runner.os }}-${{ env.NDK_VERSION }}-${{ github.sha }}
           restore-keys: |
-            cxx-${{ runner.os }}-${{ env.NDK_VERSION }}-${{ hashFiles('TMessagesProj/jni/CMakeLists.txt') }}-
-            cxx-${{ runner.os }}-${{ env.NDK_VERSION }}-
+            ccache-${{ runner.os }}-${{ env.NDK_VERSION }}-
 
       - name: Збірка debug APK
         env:
@@ -113,10 +132,22 @@ jobs:
           # раннер має лише ~7 ГБ RAM і з 8 ГБ heap Gradle не стартує.
           ./gradlew :TMessagesProj_App:assembleAfatDebug \
             -PTARGET_ABIS="$ABIS" \
+            -PUSE_CCACHE \
             -Dorg.gradle.jvmargs="-Xmx4g -XX:MaxMetaspaceSize=1g" \
             --max-workers=2 \
             --stacktrace \
             --no-daemon
+
+      - name: Статистика ccache
+        if: always()
+        run: ccache --show-stats
+
+      - name: Зберегти кеш ccache
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: /home/runner/.cache/ccache
+          key: ccache-${{ runner.os }}-${{ env.NDK_VERSION }}-${{ github.sha }}
 
       - name: Знайти APK
         id: apk
