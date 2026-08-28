@@ -111,7 +111,8 @@ android {
     productFlavors {
         bundleAfat {
             ndk {
-                abiFilters "armeabi-v7a", "arm64-v8a", "x86", "x86_64"
+                abiFilters.clear()
+                abiFilters.addAll(targetAbis())
             }
             ext {
                 abiVersionCode = 1
@@ -120,7 +121,8 @@ android {
         }
         bundleAfat_SDK23 {
             ndk {
-                abiFilters "armeabi-v7a", "arm64-v8a", "x86", "x86_64"
+                abiFilters.clear()
+                abiFilters.addAll(targetAbis())
             }
             sourceSets.debug {
                 manifest.srcFile '../TMessagesProj/config/debug/AndroidManifest_SDK23.xml'
@@ -136,7 +138,8 @@ android {
         }
         afat {
             ndk {
-                abiFilters "armeabi-v7a", "arm64-v8a", "x86", "x86_64"
+                abiFilters.clear()
+                abiFilters.addAll(targetAbis())
             }
             sourceSets.debug {
                 manifest.srcFile '../TMessagesProj/config/debug/AndroidManifest_SDK23.xml'
@@ -199,4 +202,11 @@ android {
     }
 }
 
-apply plugin: 'com.google.gms.google-services'
+
+// ── Форк MyTelegram ──────────────────────────────────────────────────────
+// Дублює хелпер із TMessagesProj/build.gradle: Gradle-скрипти модулів
+// не бачать методів один одного, тож функція потрібна в обох файлах.
+def targetAbis() {
+    def raw = project.hasProperty('TARGET_ABIS') ? project.property('TARGET_ABIS') : 'arm64-v8a'
+    return raw.toString().split(',').collect { it.trim() }.findAll { !it.isEmpty() }
+}

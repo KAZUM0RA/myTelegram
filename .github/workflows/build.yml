@@ -1,0 +1,144 @@
+name: Build debug APK
+
+on:
+  push:
+    branches:
+      - feature/ai-panel
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      abis:
+        description: 'ABI для збірки (через кому)'
+        required: false
+        default: 'arm64-v8a'
+
+# Новий пуш скасовує попередню незавершену збірку тієї ж гілки —
+# нативна частина довга, немає сенсу тримати дві паралельно.
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NDK_VERSION: '27.2.12479018'
+  CMAKE_VERSION: '3.22.1'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+
+    steps:
+      # Раннер приватного репозиторію має ~14 ГБ диска. NDK (~3 ГБ),
+      # SDK, boringssl і об'єктні файли CMake туди ледве влазять,
+      # тож прибираємо передвстановлене, чим не користуємось.
+      - name: Звільнити місце на диску
+        run: |
+          echo "До:"; df -h / | tail -1
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android/sdk/ndk \
+                      /opt/ghc /usr/local/share/boost "$AGENT_TOOLSDIRECTORY" || true
+          echo "Після:"; df -h / | tail -1
+
+      # fetch-depth: 1 — без цього тягнеться ~700 МБ історії, яка збірці
+      # не потрібна.
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          submodules: false
+
+      # Ініціалізуємо ЛИШЕ ті підмодулі, без яких не збереться:
+      #   jlatexmath           — окремий Gradle-модуль (settings.gradle)
+      #   tlottie              — заголовки для prebuild/libtlottie.a
+      #   libyuv, xiph/*       — CMake компілює їхні сирці
+      # ffmpeg, dav1d, libvpx, openh264 НЕ потрібні: їхні .a вже лежать
+      # зібраними в jni/ffmpeg/<abi>/ та jni/prebuild/<abi>/.
+      - name: Ініціалізувати потрібні підмодулі
+        run: |
+          git submodule update --init --depth 1 --recommend-shallow \
+            TMessagesProj/lib/jlatexmath \
+            TMessagesProj/jni/tlottie \
+            TMessagesProj/jni/third_party/libyuv \
+            TMessagesProj/jni/third_party/xiph/ogg \
+            TMessagesProj/jni/third_party/xiph/opus \
+            TMessagesProj/jni/third_party/xiph/opusfile
+          git submodule status
+
+      - name: JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: ''
+
+      - name: NDK ${{ env.NDK_VERSION }} + CMake ${{ env.CMAKE_VERSION }}
+        run: |
+          sdkmanager --install \
+            "platforms;android-36" \
+            "build-tools;36.0.0" \
+            "ndk;${NDK_VERSION}" \
+            "cmake;${CMAKE_VERSION}"
+
+      - name: Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: ${{ github.ref != 'refs/heads/feature/ai-panel' }}
+
+      # Об'єктні файли CMake — найдорожче в збірці. Ключ прив'язаний до
+      # CMakeLists та версії NDK: змінився один із них — кеш недійсний.
+      - name: Кеш нативної збірки
+        uses: actions/cache@v4
+        with:
+          path: |
+            TMessagesProj/.cxx
+            TMessagesProj/build/intermediates/cxx
+          key: cxx-${{ runner.os }}-${{ env.NDK_VERSION }}-${{ hashFiles('TMessagesProj/jni/CMakeLists.txt') }}-${{ github.sha }}
+          restore-keys: |
+            cxx-${{ runner.os }}-${{ env.NDK_VERSION }}-${{ hashFiles('TMessagesProj/jni/CMakeLists.txt') }}-
+            cxx-${{ runner.os }}-${{ env.NDK_VERSION }}-
+
+      - name: Збірка debug APK
+        env:
+          # Ключі з my.telegram.org. Лежать у Settings -> Secrets and
+          # variables -> Actions. У код і в логи не потрапляють.
+          TELEGRAM_APP_ID: ${{ secrets.TELEGRAM_APP_ID }}
+          TELEGRAM_APP_HASH: ${{ secrets.TELEGRAM_APP_HASH }}
+        run: |
+          ABIS="${{ github.event.inputs.abis || 'arm64-v8a' }}"
+          echo "Збираю під: $ABIS"
+          # -Dorg.gradle.jvmargs перекриває -Xmx8g із gradle.properties:
+          # раннер має лише ~7 ГБ RAM і з 8 ГБ heap Gradle не стартує.
+          ./gradlew :TMessagesProj_App:assembleAfatDebug \
+            -PTARGET_ABIS="$ABIS" \
+            -Dorg.gradle.jvmargs="-Xmx4g -XX:MaxMetaspaceSize=1g" \
+            --max-workers=2 \
+            --stacktrace \
+            --no-daemon
+
+      - name: Знайти APK
+        id: apk
+        run: |
+          FOUND=$(find TMessagesProj_App -name "*.apk" -path "*afat*" | head -1)
+          echo "Знайдено: $FOUND"
+          ls -lh "$FOUND"
+          echo "path=$FOUND" >> "$GITHUB_OUTPUT"
+
+      - name: Вивантажити APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: mytelegram-debug-${{ github.sha }}
+          path: ${{ steps.apk.outputs.path }}
+          if-no-files-found: error
+          retention-days: 30
+
+      # Якщо збірка впала — логи CMake кажуть значно більше, ніж вивід Gradle.
+      - name: Логи нативної збірки (при падінні)
+        if: failure()
+        run: |
+          find TMessagesProj/.cxx -name "*.log" -o -name "CMakeError.log" \
+            -o -name "CMakeOutput.log" 2>/dev/null | head -20 | while read f; do
+              echo "===== $f ====="; tail -80 "$f"
+          done

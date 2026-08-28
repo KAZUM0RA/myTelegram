@@ -1,8 +1,16 @@
 include ':TMessagesProj'
 include ':TMessagesProj_App'
-include ':TMessagesProj_AppHuawei'
-include ':TMessagesProj_AppHockeyApp'
-include ':TMessagesProj_AppStandalone'
-include ':TMessagesProj_AppTests'
+
+// ── Форк MyTelegram ──────────────────────────────────────────────────────
+// Модулі нижче — це альтернативні канали дистрибуції апстріму, які ми не
+// збираємо. Кожен із них тягне за собою окремий плагін і власний конфіг
+// (google-services.json, agconnect-services.json, Crashlytics), яких у форку
+// немає, і сповільнює конфігурацію Gradle на кожній збірці.
+// Щоб повернути — просто розкоментуй потрібний рядок.
+//include ':TMessagesProj_AppHuawei'
+//include ':TMessagesProj_AppHockeyApp'
+//include ':TMessagesProj_AppStandalone'
+//include ':TMessagesProj_AppTests'
+
 include ':jlatexmath'
 project(':jlatexmath').projectDir = file('TMessagesProj/lib/jlatexmath/jlatexmath')

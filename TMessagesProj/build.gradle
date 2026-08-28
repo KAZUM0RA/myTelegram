@@ -133,6 +133,18 @@ android {
 
         multiDexEnabled true
 
+        // Форк: api_id / api_hash з my.telegram.org.
+        // Значення НЕ хардкодяться тут — беруться з local.properties (локально)
+        // або зі змінних середовища (CI). Див. getSecret() нижче.
+        buildConfigField "int", "TELEGRAM_APP_ID", getSecret("TELEGRAM_APP_ID", "0")
+        buildConfigField "String", "TELEGRAM_APP_HASH", "\"" + getSecret("TELEGRAM_APP_HASH", "") + "\""
+
+        // Форк: обмежуємо перелік ABI (див. TARGET_ABIS у gradle.properties).
+        ndk {
+            abiFilters.clear()
+            abiFilters.addAll(targetAbis())
+        }
+
         externalNativeBuild {
             cmake {
                 version '3.22.1'
@@ -254,7 +266,46 @@ def getProps(String propName) {
         return "";
     }
 }
-apply plugin: 'com.google.gms.google-services'
+
+// ── Форк MyTelegram ──────────────────────────────────────────────────────
+// Секрети збірки (api_id / api_hash). Порядок пошуку:
+//   1. Змінна середовища  — так їх передає GitHub Actions із Secrets
+//   2. local.properties   — так їх задаєш локально (файл у .gitignore)
+//   3. fallback           — щоб `gradlew tasks` не падав без ключів
+// У git не потрапляє жодним із шляхів.
+def getSecret(String name, String fallback) {
+    def env = System.getenv(name)
+    if (env != null && !env.trim().isEmpty()) {
+        return env.trim()
+    }
+    def prop = getProps(name)
+    if (prop != null && !prop.toString().trim().isEmpty()) {
+        return prop.toString().trim()
+    }
+    return fallback
+}
+
+// Перелік ABI для нативної збірки, керується TARGET_ABIS у gradle.properties
+// або прапорцем -PTARGET_ABIS=... у командному рядку.
+def targetAbis() {
+    def raw = project.hasProperty('TARGET_ABIS') ? project.property('TARGET_ABIS') : 'arm64-v8a'
+    return raw.toString().split(',').collect { it.trim() }.findAll { !it.isEmpty() }
+}
+
+// Раннє й зрозуміле падіння замість «застосунок не логіниться» вже на телефоні.
+// APP_ID = 0 означає, що ключі не підставилися нізвідки.
+tasks.register('checkTelegramApiCredentials') {
+    doFirst {
+        if (getSecret("TELEGRAM_APP_ID", "0") == "0" || getSecret("TELEGRAM_APP_HASH", "").isEmpty()) {
+            throw new GradleException(
+                "\n\n  Не задано TELEGRAM_APP_ID / TELEGRAM_APP_HASH.\n" +
+                "  Отримай їх на https://my.telegram.org -> API development tools і додай:\n" +
+                "    - локально: у local.properties (див. local.properties.example)\n" +
+                "    - у CI:     Settings -> Secrets and variables -> Actions\n\n")
+        }
+    }
+}
+preBuild.dependsOn('checkTelegramApiCredentials')
 
 task checkVisibility {
     doFirst {
