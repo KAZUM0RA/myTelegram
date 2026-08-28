@@ -2771,9 +2771,15 @@ public class ChatActivityEnterView extends FrameLayout implements
             aiTranslateButton.setScaleType(ImageView.ScaleType.CENTER);
             aiTranslateButton.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector)));
             aiTranslateButton.setContentDescription(getString(R.string.AiTranslateButton));
-            // Без ключа кнопка тільки заважала б: ховаємо, поки він не заданий.
-            aiTranslateButton.setVisibility(org.telegram.ai.AiConfig.isReady() ? VISIBLE : GONE);
-            attachLayout.addView(aiTranslateButton, LayoutHelper.createLinear(DEFAULT_HEIGHT, DEFAULT_HEIGHT));
+            // Навмисно НЕ в attachLayout: Telegram ховає ту панель, щойно
+            // з'являється текст, щоб звільнити місце під кнопку відправки, —
+            // тобто кнопка зникала б рівно тоді, коли стає потрібною.
+            // Кладемо в контейнер поля вводу на ту саму позицію, але з
+            // протилежною умовою: показуємо, коли текст Є. Перекриття немає,
+            // бо ці два стани взаємовиключні.
+            aiTranslateButton.setVisibility(GONE);
+            messageEditTextContainer.addView(aiTranslateButton, LayoutHelper.createFrame(
+                    DEFAULT_HEIGHT, DEFAULT_HEIGHT, Gravity.BOTTOM | Gravity.RIGHT, 0, 0, DEFAULT_HEIGHT, 0));
             aiTranslateButton.setOnClickListener(v -> {
                 if (parentFragment == null || messageEditText == null) {
                     return;
@@ -5970,6 +5976,7 @@ public class ChatActivityEnterView extends FrameLayout implements
 
             @Override
             public void afterTextChanged(Editable editable) {
+                updateAiTranslateButton(); // Форк: кнопка має сенс лише коли є текст
                 if (ignorePrevTextChange) {
                     return;
                 }
@@ -6625,6 +6632,8 @@ public class ChatActivityEnterView extends FrameLayout implements
 
     public void onResume() {
         isPaused = false;
+        // Форк: ключ могли задати в налаштуваннях, не виходячи з чату.
+        updateAiTranslateButton();
         if (hideKeyboardRunnable != null) {
             AndroidUtilities.cancelRunOnUIThread(hideKeyboardRunnable);
             hideKeyboardRunnable = null;
@@ -10556,6 +10565,22 @@ public class ChatActivityEnterView extends FrameLayout implements
 
     public boolean hasText() {
         return messageEditText != null && messageEditText.length() > 0;
+    }
+
+    /**
+     * Форк: видимість кнопки AI-перекладу.
+     *
+     * <p>Показуємо лише коли є що перекладати і заданий ключ. Так відпадає
+     * і потреба показувати помилку «немає що перекладати», і кнопка не
+     * займає місце в порожньому полі. Викликається з afterTextChanged та
+     * при поверненні на екран — ключ могли задати, поки чат був відкритий.
+     */
+    private void updateAiTranslateButton() {
+        if (aiTranslateButton == null) {
+            return;
+        }
+        final boolean show = org.telegram.ai.AiConfig.isReady() && hasText();
+        aiTranslateButton.setVisibility(show ? VISIBLE : GONE);
     }
 
     @Nullable
