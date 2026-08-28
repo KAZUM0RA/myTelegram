@@ -18,6 +18,7 @@ import android.widget.ScrollView;
 import org.telegram.ai.AiConfig;
 import org.telegram.ai.AiKeyStorage;
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.TranslateController;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.AlertDialog;
@@ -29,6 +30,9 @@ import org.telegram.ui.Cells.TextSettingsCell;
 import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.EditTextBoldCursor;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.TranslateAlert2;
+
+import java.util.ArrayList;
 
 /**
  * Екран «AI-асистент»: ключ API, модель, мова перекладу.
@@ -41,6 +45,7 @@ public class AiSettingsActivity extends BaseFragment {
 
     private TextSettingsCell keyCell;
     private TextSettingsCell modelCell;
+    private TextSettingsCell langCell;
 
     @Override
     public View createView(Context context) {
@@ -76,6 +81,11 @@ public class AiSettingsActivity extends BaseFragment {
         modelCell.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
         modelCell.setOnClickListener(v -> showModelDialog());
         root.addView(modelCell);
+
+        langCell = new TextSettingsCell(context);
+        langCell.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+        langCell.setOnClickListener(v -> showLanguageDialog());
+        root.addView(langCell);
 
         root.addView(info(context, getString(R.string.AiCostInfo)));
 
@@ -114,8 +124,52 @@ public class AiSettingsActivity extends BaseFragment {
         }
         if (modelCell != null) {
             modelCell.setTextAndValue(
-                    getString(R.string.AiModelRow), AiConfig.getModelTitle(), false);
+                    getString(R.string.AiModelRow), AiConfig.getModelTitle(), true);
         }
+        if (langCell != null) {
+            final String code = AiConfig.getTargetLanguage();
+            final String value = code.isEmpty()
+                    ? getString(R.string.AiTargetLangAuto)
+                    : TranslateAlert2.capitalFirst(TranslateAlert2.languageName(code));
+            langCell.setTextAndValue(getString(R.string.AiTargetLangRow), value, false);
+        }
+    }
+
+    /**
+     * Вибір мови перекладу.
+     *
+     * <p>Список беремо з {@code TranslateController.getLanguages()} — той самий,
+     * що Telegram використовує для власного перекладу. Свій список довелося б
+     * підтримувати вручну, а цей уже узгоджений із назвами мов в інтерфейсі.
+     *
+     * <p>Перший пункт — автовизначення: мова береться з останнього вхідного
+     * повідомлення в конкретному чаті. Це розумніше за фіксовану мову, бо
+     * з різними співрозмовниками листування різними мовами.
+     */
+    private void showLanguageDialog() {
+        if (getParentActivity() == null) {
+            return;
+        }
+        final ArrayList<TranslateController.Language> languages = TranslateController.getLanguages();
+
+        final CharSequence[] titles = new CharSequence[languages.size() + 1];
+        titles[0] = getString(R.string.AiTargetLangAuto);
+        for (int i = 0; i < languages.size(); i++) {
+            titles[i + 1] = languages.get(i).displayName;
+        }
+
+        final AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+        builder.setTitle(getString(R.string.AiTargetLangRow));
+        builder.setItems(titles, (dialog, which) -> {
+            if (which == 0) {
+                AiConfig.setTargetLanguage(AiConfig.TARGET_LANG_AUTO);
+            } else if (which - 1 < languages.size()) {
+                AiConfig.setTargetLanguage(languages.get(which - 1).code);
+            }
+            updateRows();
+        });
+        builder.setNegativeButton(getString(R.string.Cancel), null);
+        builder.show();
     }
 
     private void showKeyDialog() {
