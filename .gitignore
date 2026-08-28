@@ -14,3 +14,18 @@ TMessagesProj_AppHockeyApp/afat/
 TMessagesProj_AppStandalone/afat/
 TMessagesProj_AppHuawei/afat/
 TMessagesProj/jni/ffmpeg/build_android
+
+# ── Fork: локальні секрети, ніколи не комітити ────────────────────
+# api_id / api_hash з my.telegram.org та інші локальні ключі.
+# local.properties вже вище, дублюємо явно для наочності:
+local.properties
+secrets.properties
+*.local.properties
+# Локальні keystore для підпису власних збірок
+*.jks
+config/*.local.keystore
+# Ключі AI-провайдерів у будь-якому вигляді
+**/anthropic.key
+**/*.apikey
+.env
+.env.*
