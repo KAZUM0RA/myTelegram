@@ -202,6 +202,25 @@ public class FileLog {
                 privateFields.add("FLAG_" + i);
             }
 
+            // ── Форк MyTelegram: секрети, яких апстрім тут не ховає ──────────
+            // dumpResponseAndRequest() серіалізує весь TL-запит у JSON і пише
+            // його в logcat. У debug-збірці туди потрапляли api_id/api_hash,
+            // введений код підтвердження і докази SRP від двофакторки — тобто
+            // рівно те, чим можна перехопити акаунт.
+            // Апстрім ховає "phone", але поле в схемі зветься "phone_number",
+            // тож номер друкувався повністю.
+            privateFields.add("api_id");
+            privateFields.add("api_hash");
+            privateFields.add("phone_number");
+            privateFields.add("phone_code");
+            privateFields.add("phone_code_hash");
+            // SRP-обмін двофакторки: A — ефемерний ключ клієнта, M1 — доказ
+            privateFields.add("srp_id");
+            privateFields.add("A");
+            privateFields.add("M1");
+            // логін-токени (QR-вхід), токени ботів, push-токени
+            privateFields.add("token");
+
             //exclude file loading
             excludeRequests = new HashSet<>();
             excludeRequests.add("TL_upload_getFile");
