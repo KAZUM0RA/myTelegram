@@ -37,6 +37,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Message;
+import android.os.SystemClock;
 import android.text.InputType;
 import android.text.SpannableStringBuilder;
 import android.text.TextUtils;
@@ -409,7 +410,14 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
         } catch (Exception e) {
             FileLog.e(e);
         }
+        // Форк: заміряємо створення WebView. Це та сама затримка, заради
+        // якої існує WebViewWarmup — у логах видно, чи спрацював прогрів.
+        final long webViewCreateStart = SystemClock.elapsedRealtime();
         webView = replaceWith == null ? new MyWebView(getContext(), bot, bot ? botUser == null ? 0 : botUser.id : 0) : replaceWith;
+        if (replaceWith == null) {
+            FileLog.d("BotWebView: створення WebView " + (SystemClock.elapsedRealtime() - webViewCreateStart)
+                    + " мс, bot=" + bot + ", прогріто=" + WebViewWarmup.isDone());
+        }
         if (!bot) {
             CookieManager cookieManager = CookieManager.getInstance();
             cookieManager.setAcceptCookie(true);
@@ -451,6 +459,19 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 settings.setSafeBrowsingEnabled(true);
             }
+        }
+        // Форк: тримаємо растр живим, поки WebView поза екраном.
+        //
+        // Міні-апп відкривається у шторці, яка їде знизу вгору. Поки вона
+        // їде, WebView формально ще не на екрані, і система за замовчуванням
+        // викидає його растр — тому перші кадри анімації показують порожнечу,
+        // а вміст «проявляється» вже після того, як шторка стала на місце.
+        //
+        // Ціна — один додатковий буфер кадру в пам'яті, тому вмикаємо лише
+        // для ботів, а не для всього вбудованого браузера, де вкладок може
+        // бути багато.
+        if (bot && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            settings.setOffscreenPreRaster(true);
         }
         if (isVerifyingAge()) {
             settings.setMediaPlaybackRequiresUserGesture(false);
