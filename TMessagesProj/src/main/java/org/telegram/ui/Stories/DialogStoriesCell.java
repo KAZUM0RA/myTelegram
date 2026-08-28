@@ -37,6 +37,7 @@ import android.view.ViewGroup;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.animation.OvershootInterpolator;
+import android.util.TypedValue;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -158,7 +159,7 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
     LinearLayoutManager layoutManager;
     AnimatedTextView titleView;
     ActionBarAnimatedSubtitleOverlayContainer subtitleOverlayContainer;
-    ImageView telegramLogoView;
+    TextView telegramLogoView;
     ImageView emojiStatusView;
     AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable statusDrawable;
     boolean drawCircleForce;
@@ -332,14 +333,25 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
         titleView.setFocusableInTouchMode(true);
         addView(titleView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
-        telegramLogoView = new ImageView(context);
+        // Форк: апстрім показує тут офіційний логотип-напис Telegram —
+        // ImageView з drawable telegram_logo_2. Замінюємо на текст із назвою
+        // застосунку.
+        //
+        // Тип змінено з ImageView на TextView, а не просто сховано: позиція
+        // значка статусу поруч рахується від ширини цього елемента
+        // (emojiStatusView.setTranslationX(... + telegramLogoView.getMeasuredWidth())),
+        // тож зникнення елемента зсунуло б статус на заголовок.
+        // Ширина WRAP_CONTENT замість фіксованих 90dp — назва форку може бути
+        // іншої довжини, ніж логотип апстріму.
+        telegramLogoView = new TextView(context);
+        telegramLogoView.setText(getString(R.string.AppName));
+        telegramLogoView.setTextSize(TypedValue.COMPLEX_UNIT_PX, dp(17));
+        telegramLogoView.setTypeface(AndroidUtilities.bold());
+        telegramLogoView.setTextColor(getTextLogoColor());
         telegramLogoView.setContentDescription(getString(R.string.AppName));
-        telegramLogoView.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
-        telegramLogoView.setImageResource(R.drawable.telegram_logo_2);
-        telegramLogoView.setColorFilter(getTextLogoColor(), PorterDuff.Mode.MULTIPLY);
         telegramLogoView.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_YES);
         telegramLogoView.setFocusableInTouchMode(true);
-        addView(telegramLogoView, LayoutHelper.createFrame(90, 22));
+        addView(telegramLogoView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 22));
 
         statusDrawable = new AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable(null, dp(26));
         statusDrawable.center = true;
@@ -1156,7 +1168,9 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
         if (subtitleOverlayContainer != null) {
             subtitleOverlayContainer.updateColors();
         }
-        telegramLogoView.setColorFilter(getTextLogoColor(), PorterDuff.Mode.MULTIPLY);
+        // Форк: тепер це TextView з назвою застосунку, а не ImageView з
+        // логотипом, тож колір задається напряму, без colorFilter.
+        telegramLogoView.setTextColor(getTextLogoColor());
         AndroidUtilities.forEachViews(recyclerListView, view -> {
             StoryCell cell = (StoryCell) view;
             cell.invalidate();
