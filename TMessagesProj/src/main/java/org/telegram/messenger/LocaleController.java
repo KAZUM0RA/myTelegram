@@ -1430,10 +1430,24 @@ public class LocaleController {
         return getStringInternal(key, null, 0, res);
     }
 
+    /**
+     * Форк: назва застосунку завжди береться з локальних ресурсів.
+     *
+     * USE_CLOUD_STRINGS змушує getString() спершу шукати рядок у мовному
+     * пакеті, який завантажується з серверів Telegram. Там AppName = "Telegram",
+     * тож хмарне значення перекривало наш рядок і в шапці чатів світилась
+     * чужа назва. Вимикати хмарні рядки цілком не можна — на них тримається
+     * весь переклад інтерфейсу, — тому виняток робимо саме для цих ключів.
+     */
+    private static boolean isAppNameKey(String key) {
+        return "AppName".equals(key) || "AppNameBeta".equals(key);
+    }
+
     private String getStringInternal(String key, String fallback, int fallbackRes, int res) {
-        String value = BuildVars.USE_CLOUD_STRINGS ? localeValues.get(key) : null;
+        final boolean useCloud = BuildVars.USE_CLOUD_STRINGS && !isAppNameKey(key);
+        String value = useCloud ? localeValues.get(key) : null;
         if (value == null) {
-            if (BuildVars.USE_CLOUD_STRINGS && fallback != null) {
+            if (useCloud && fallback != null) {
                 value = localeValues.get(fallback);
             }
             if (value == null) {
