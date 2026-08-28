@@ -29,6 +29,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 180
 
+    # Потрібне, щоб крок публікації міг створити/оновити реліз із APK.
+    permissions:
+      contents: write
+
     steps:
       # Раннер приватного репозиторію має ~14 ГБ диска. NDK (~3 ГБ),
       # SDK, boringssl і об'єктні файли CMake туди ледве влазять,
@@ -157,13 +161,41 @@ jobs:
           ls -lh "$FOUND"
           echo "path=$FOUND" >> "$GITHUB_OUTPUT"
 
-      - name: Вивантажити APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: mytelegram-debug-${{ github.sha }}
-          path: ${{ steps.apk.outputs.path }}
-          if-no-files-found: error
-          retention-days: 30
+      # APK віддаємо релізом, а не артефактом Actions: активи релізів не
+      # входять у квоту сховища артефактів (500 МБ на безкоштовному плані,
+      # її ми вже вичерпали), плюс посилання стале — зручно відкривати
+      # прямо з телефона.
+      #
+      # Тег debug-latest «ковзний»: щоразу видаляємо і створюємо наново,
+      # щоб він указував на свіжий коміт, а URL не змінювався.
+      - name: Опублікувати APK у релізі debug-latest
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          SHORT="$(git rev-parse --short HEAD)"
+          NAME="mytelegram-debug-${SHORT}.apk"
+          cp "${{ steps.apk.outputs.path }}" "$NAME"
+          ls -lh "$NAME"
+
+          {
+            echo "Неофіційна debug-збірка MyTelegram. Не для поширення."
+            echo
+            echo "- Коміт: \`$GITHUB_SHA\`"
+            echo "- ABI: \`${{ github.event.inputs.abis || 'arm64-v8a' }}\`"
+            echo "- Зібрано: $(date -u '+%Y-%m-%d %H:%M') UTC"
+            echo
+            echo "Встановлюється поруч з офіційним Telegram: package name інший"
+            echo "(\`com.kazum0ra.mytelegram.beta\`), конфлікту провайдерів немає."
+          } > release-notes.md
+
+          gh release delete debug-latest --yes --cleanup-tag 2>/dev/null || true
+          gh release create debug-latest "$NAME" \
+            --prerelease \
+            --target "$GITHUB_SHA" \
+            --title "Debug build $SHORT" \
+            --notes-file release-notes.md
+
+          echo "Готово: $(gh release view debug-latest --json url -q .url)"
 
       # Якщо збірка впала — логи CMake кажуть значно більше, ніж вивід Gradle.
       - name: Логи нативної збірки (при падінні)
