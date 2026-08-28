@@ -354,22 +354,11 @@ public class ApplicationLoader extends Application {
         LauncherIconController.tryFixLauncherIconIfNeeded();
         ProxyRotationController.init();
 
-        // Форк: прогрів WebView ТИМЧАСОВО ВИМКНЕНО.
-        //
-        // Після його додавання застосунок став малювати весь текст чорним
-        // по чорному: Theme.getColor() почав повертати 0 майже для всіх
-        // ключів. Офіційний клієнт на тому ж акаунті працює нормально,
-        // тож справа саме в нашій збірці.
-        //
-        // Підозра: ініціалізація WebView перебудовує шляхи до ресурсів
-        // застосунку (addWebViewAssetPath), і кеш теми лишається з
-        // посиланнями на старі Resources. Це єдина зі змін форку, яка
-        // чіпає стан усього процесу.
-        //
-        // Рядок навмисно не видалено, а закоментовано: перевіряємо гіпотезу
-        // збіркою без нього. Якщо підтвердиться — прогрів треба переробити
-        // (контекст Activity замість application, або взагалі відмовитись).
-        // org.telegram.ui.web.WebViewWarmup.scheduleWarmup(applicationContext);
+        // Форк: прогріваємо WebView заздалегідь, щоб перше відкриття
+        // бота-міні-аппа не платило за завантаження провайдера і старт
+        // рендерера. Метод лише ставить завдання в чергу з затримкою —
+        // тут, на критичному шляху старту, він нічого не робить.
+        org.telegram.ui.web.WebViewWarmup.scheduleWarmup(applicationContext);
     }
 
     public static void startPushService() {
