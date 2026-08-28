@@ -23,6 +23,14 @@ env:
   CMAKE_VERSION: '3.22.1'
   # Явно, щоб шлях у кроках cache і в самому ccache гарантовано збігався
   CCACHE_DIR: /home/runner/.cache/ccache
+  # За замовчуванням ccache впізнає компілятор за mtime бінарника. Ми ж
+  # щоразу видаляємо передвстановлений NDK і ставимо його sdkmanager'ом
+  # наново — mtime щоразу новий, і весь кеш вважається чужим (саме тому
+  # у збірці #3 було 0 влучань при відновленому кеші на 0.6 ГБ).
+  # `content` рахує хеш самого бінарника — він між запусками не змінюється.
+  CCACHE_COMPILERCHECK: content
+  # Ті самі граблі з боку сирців: після checkout усі mtime свіжі.
+  CCACHE_SLOPPINESS: time_macros,include_file_mtime,include_file_ctime,file_stat_matches,locale
 
 jobs:
   build:
@@ -107,7 +115,6 @@ jobs:
         run: |
           sudo apt-get update -qq && sudo apt-get install -y -qq ccache
           ccache --max-size=3G
-          ccache --zero-stats
 
       # Кешуємо саме ccache, а не .cxx: ccache зіставляє файли за хешем
       # вмісту, тож переживає checkout, де всі mtime свіжі.
@@ -122,6 +129,11 @@ jobs:
           key: ccache-${{ runner.os }}-${{ env.NDK_VERSION }}-${{ github.sha }}
           restore-keys: |
             ccache-${{ runner.os }}-${{ env.NDK_VERSION }}-
+
+      # Обнуляємо лічильники ПІСЛЯ відновлення: інакше restore перезаписує
+      # файл статистики попереднім і числа стають сумою двох запусків.
+      - name: Обнулити статистику ccache
+        run: ccache --zero-stats
 
       - name: Збірка debug APK
         env:
