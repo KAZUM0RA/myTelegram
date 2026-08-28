@@ -697,6 +697,10 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         items.add(SettingCell.Factory.of(8, IconBackgroundColors.CYAN.top, IconBackgroundColors.CYAN.bottom, R.drawable.settings_devices, getString(R.string.SettingsDevices), getString(R.string.SettingsDevicesInfo)));
         items.add(SettingCell.Factory.of(9, IconBackgroundColors.ORANGE_DEEP.top, IconBackgroundColors.ORANGE_DEEP.bottom, R.drawable.settings_power, getString(R.string.SettingsPowerSaving), getString(R.string.SettingsPowerSavingInfo)));
         items.add(SettingCell.Factory.of(10, IconBackgroundColors.PURPLE.top, IconBackgroundColors.PURPLE.bottom, R.drawable.settings_language, getString(R.string.SettingsLanguage), LocaleController.getCurrentLanguageName()));
+        // Форк: AI-асистент. Id 900 — навмисно далеко від нумерації апстріму,
+        // щоб нові пункти в наступних версіях не зіткнулися з нашим.
+        // У підзаголовку — стан, щоб було видно наявність ключа без заходу.
+        items.add(SettingCell.Factory.of(900, IconBackgroundColors.CYAN.top, IconBackgroundColors.CYAN.bottom, R.drawable.outline_ai_translate2, getString(R.string.AiSettingsTitle), getString(org.telegram.ai.AiConfig.isReady() ? R.string.AiStateOn : R.string.AiStateNoKey)));
 
         items.add(UItem.asShadow(null));
 
@@ -835,6 +839,9 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 break;
             case 10:
                 presentSettingFragment(new LanguageSelectActivity());
+                break;
+            case 900: // Форк: AI-асистент
+                presentSettingFragment(new AiSettingsActivity());
                 break;
 
             case 11:
