@@ -2777,9 +2777,13 @@ public class ChatActivityEnterView extends FrameLayout implements
             // Кладемо в контейнер поля вводу на ту саму позицію, але з
             // протилежною умовою: показуємо, коли текст Є. Перекриття немає,
             // бо ці два стани взаємовиключні.
+            // Відступ 0, а не DEFAULT_HEIGHT як в attachLayout: той відступ
+            // розрахований на панель із кількох кнопок, і для однієї кнопки
+            // лишав би порожнечу праворуч, а сама кнопка висіла б посеред
+            // текстового поля.
             aiTranslateButton.setVisibility(GONE);
             messageEditTextContainer.addView(aiTranslateButton, LayoutHelper.createFrame(
-                    DEFAULT_HEIGHT, DEFAULT_HEIGHT, Gravity.BOTTOM | Gravity.RIGHT, 0, 0, DEFAULT_HEIGHT, 0));
+                    DEFAULT_HEIGHT, DEFAULT_HEIGHT, Gravity.BOTTOM | Gravity.RIGHT, 0, 0, 0, 0));
             aiTranslateButton.setOnClickListener(v -> {
                 if (parentFragment == null || messageEditText == null) {
                     return;
@@ -8791,6 +8795,12 @@ public class ChatActivityEnterView extends FrameLayout implements
                 layoutParams.rightMargin = dp(2);
             }
         }
+        // Форк: кнопка AI-перекладу теж займає місце праворуч у полі.
+        // Без цього текст підповзає під неї: коли є текст, attachLayout
+        // сховано, attachVisible == 0, і відступ лишався б dp(2).
+        if (aiTranslateButton != null && aiTranslateButton.getVisibility() == VISIBLE) {
+            layoutParams.rightMargin = Math.max(layoutParams.rightMargin, dp(DEFAULT_HEIGHT));
+        }
         layoutParams.rightMargin = Math.max(layoutParams.rightMargin, Math.max(0, sendButton.width() - dp(DEFAULT_HEIGHT)));
         if (doneButton != null && doneButton.getVisibility() == VISIBLE) {
             layoutParams.rightMargin = Math.max(layoutParams.rightMargin, Math.max(0, doneButton.width() - dp(DEFAULT_HEIGHT)));
@@ -10580,7 +10590,13 @@ public class ChatActivityEnterView extends FrameLayout implements
             return;
         }
         final boolean show = org.telegram.ai.AiConfig.isReady() && hasText();
+        if (aiTranslateButton.getVisibility() == (show ? VISIBLE : GONE)) {
+            return;
+        }
         aiTranslateButton.setVisibility(show ? VISIBLE : GONE);
+        // Перерахувати відступ поля: кнопка щойно з'явилась або зникла,
+        // і місце під неї треба відповідно зайняти або звільнити.
+        updateFieldRight(lastAttachVisible);
     }
 
     @Nullable
