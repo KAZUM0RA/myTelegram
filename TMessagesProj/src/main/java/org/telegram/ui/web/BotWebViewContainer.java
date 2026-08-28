@@ -403,6 +403,11 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
         if (replaceWith != null) {
             AndroidUtilities.removeFromParent(replaceWith);
         }
+        // Форк: заміри. Важливо, що таймер стартує ДО setWebContentsDebuggingEnabled:
+        // це статичний виклик WebView, і саме він, а не конструктор, тягне
+        // завантаження провайдера. Перший вимір цього не враховував і тому
+        // показував безглузді числа.
+        final long setupStart = SystemClock.elapsedRealtime();
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
                 WebView.setWebContentsDebuggingEnabled(SharedConfig.debugWebView && !isVerifyingAge());
@@ -410,12 +415,13 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
         } catch (Exception e) {
             FileLog.e(e);
         }
-        // Форк: заміряємо створення WebView. Це та сама затримка, заради
-        // якої існує WebViewWarmup — у логах видно, чи спрацював прогрів.
-        final long webViewCreateStart = SystemClock.elapsedRealtime();
+        final long afterStaticInit = SystemClock.elapsedRealtime();
         webView = replaceWith == null ? new MyWebView(getContext(), bot, bot ? botUser == null ? 0 : botUser.id : 0) : replaceWith;
         if (replaceWith == null) {
-            FileLog.d("BotWebView: створення WebView " + (SystemClock.elapsedRealtime() - webViewCreateStart)
+            final long now = SystemClock.elapsedRealtime();
+            FileLog.d("BotWebView: провайдер " + (afterStaticInit - setupStart)
+                    + " мс, конструктор " + (now - afterStaticInit)
+                    + " мс, разом " + (now - setupStart)
                     + " мс, bot=" + bot + ", прогріто=" + WebViewWarmup.isDone());
         }
         if (!bot) {
