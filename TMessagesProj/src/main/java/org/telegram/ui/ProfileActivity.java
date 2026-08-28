@@ -626,6 +626,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private int settingsSectionRow2;
     private int notificationRow;
     private int languageRow;
+    private int aiSettingsRow; // Форк: екран AI-асистента
     private int privacyRow;
     private int dataRow;
     private int chatRow;
@@ -4575,6 +4576,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 showDialog(builder1.create());
             } else if (position == languageRow) {
                 presentFragment(new LanguageSelectActivity());
+            } else if (position == aiSettingsRow) {
+                presentFragment(new AiSettingsActivity());
             } else if (position == setUsernameRow) {
                 presentFragment(new ChangeUsernameActivity());
             } else if (position == bioRow) {
@@ -10469,6 +10472,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         settingsSectionRow2 = -1;
         notificationRow = -1;
         languageRow = -1;
+        aiSettingsRow = -1;
         premiumRow = -1;
         starsRow = -1;
         tonRow = -1;
@@ -10649,6 +10653,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 }
                 devicesRow = rowCount++;
                 languageRow = rowCount++;
+                aiSettingsRow = rowCount++; // Форк: одразу після «Мова» — сусідство за змістом
                 devicesSectionRow = rowCount++;
                 if (!getMessagesController().premiumFeaturesBlocked()) {
                     premiumRow = rowCount++;
@@ -13831,7 +13836,17 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         textCell.setColors(-1, Theme.key_text_RedRegular);
                         textCell.setColors(-1, Theme.key_text_RedRegular);
                     } else if (position == languageRow) {
-                        textCell.setTextAndValueAndIcon(LocaleController.getString(R.string.Language), LocaleController.getCurrentLanguageName(), false, R.drawable.msg2_language, false);
+                        // Форк: divider тепер true — нижче з'явився рядок AI-асистента
+                        textCell.setTextAndValueAndIcon(LocaleController.getString(R.string.Language), LocaleController.getCurrentLanguageName(), false, R.drawable.msg2_language, true);
+                        textCell.setImageLeft(23);
+                    } else if (position == aiSettingsRow) {
+                        // Значення показує стан налаштування: без ключа функції не працюють,
+                        // і краще, щоб це було видно ще до заходу на екран.
+                        textCell.setTextAndValueAndIcon(
+                                LocaleController.getString(R.string.AiSettingsTitle),
+                                LocaleController.getString(org.telegram.ai.AiConfig.isReady()
+                                        ? R.string.AiStateOn : R.string.AiStateNoKey),
+                                false, R.drawable.outline_ai_translate2, false);
                         textCell.setImageLeft(23);
                     } else if (position == notificationRow) {
                         textCell.setTextAndIcon(LocaleController.getString(R.string.NotificationsAndSounds), R.drawable.msg2_notifications, true);
