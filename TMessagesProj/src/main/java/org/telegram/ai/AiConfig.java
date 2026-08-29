@@ -46,22 +46,28 @@ public class AiConfig {
     public static final String MODEL_SONNET = "claude-sonnet-5";
     public static final String MODEL_OPUS = "claude-opus-5";
 
-    public static final String MODEL_GEMINI_FLASH_LITE = "gemini-2.5-flash-lite";
-    public static final String MODEL_GEMINI_FLASH = "gemini-2.5-flash";
+    public static final String MODEL_GEMINI_FLASH_LITE = "gemini-3.5-flash-lite";
+    public static final String MODEL_GEMINI_FLASH = "gemini-3.7-flash";
+    /** Старіше покоління — лишаємо як запасний варіант, якщо новіші недоступні ключу. */
+    public static final String MODEL_GEMINI_25_FLASH_LITE = "gemini-2.5-flash-lite";
 
     /**
-     * Модель для голосових. Документація моделей Google підтверджує підтримку
-     * аудіо саме для gemini-2.5-flash; для Flash-Lite сторінка цін згадує
-     * аудіо, а сторінка моделей — ні. За суперечності джерел беремо те, що
-     * підтверджене, і не залежимо від вибору моделі для тексту.
+     * Модель для голосових, зафіксована окремо від моделі для тексту.
+     *
+     * <p>Джерела Google суперечать одне одному щодо того, які саме моделі
+     * приймають аудіо: сторінка цін наводить вартість аудіо для Flash-Lite,
+     * сторінка моделей цього не підтверджує. Тому голосові не залежать від
+     * вибору моделі для тексту, а «Перевірити зв'язок» у налаштуваннях
+     * показує, що насправді доступне конкретному ключу.
      */
-    public static final String MODEL_GEMINI_AUDIO = MODEL_GEMINI_FLASH;
+    public static final String MODEL_GEMINI_AUDIO = MODEL_GEMINI_FLASH_LITE;
 
     public static String[][] availableModels(String provider) {
         if (PROVIDER_GEMINI.equals(provider)) {
             return new String[][]{
-                    {MODEL_GEMINI_FLASH_LITE, "Flash-Lite — найдешевша"},
-                    {MODEL_GEMINI_FLASH,      "Flash — точніша, вміє аудіо"},
+                    {MODEL_GEMINI_FLASH_LITE,    "3.5 Flash-Lite — найдешевша, вміє аудіо"},
+                    {MODEL_GEMINI_FLASH,         "3.7 Flash — найновіша"},
+                    {MODEL_GEMINI_25_FLASH_LITE, "2.5 Flash-Lite — старіша, запасна"},
             };
         }
         return new String[][]{

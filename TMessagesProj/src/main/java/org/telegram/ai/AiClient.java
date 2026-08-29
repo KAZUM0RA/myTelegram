@@ -334,24 +334,106 @@ public class AiClient {
 
     // ── Помилки ──────────────────────────────────────────────────────────
 
+    /**
+     * Пояснення помилки.
+     *
+     * <p>Повідомлення сервера додаємо ЗАВЖДИ, коли воно є, а не лише для 400.
+     * Раніше 404 показувався самим лише кодом, і зрозуміти, що річ у назві
+     * моделі, було неможливо — тоді як Google пише це прямим текстом.
+     */
     private static String describeHttpError(int code, String response) {
+        final String base;
         switch (code) {
-            case 400:
-                final String detail = extractErrorMessage(response);
-                return TextUtils.isEmpty(detail)
-                        ? LocaleController.getString(R.string.AiErrorBadRequest)
-                        : LocaleController.getString(R.string.AiErrorBadRequest) + "\n" + detail;
             case 401:
             case 403:
-                return LocaleController.getString(R.string.AiErrorInvalidKey);
+                base = LocaleController.getString(R.string.AiErrorInvalidKey);
+                break;
+            case 404:
+                base = LocaleController.getString(R.string.AiErrorModelNotFound);
+                break;
             case 429:
-                return LocaleController.getString(R.string.AiErrorRateLimit);
+                base = LocaleController.getString(R.string.AiErrorRateLimit);
+                break;
+            case 400:
+                base = LocaleController.getString(R.string.AiErrorBadRequest);
+                break;
             default:
-                if (code >= 500) {
-                    return LocaleController.getString(R.string.AiErrorServer);
-                }
-                return LocaleController.formatString(R.string.AiErrorHttp, code);
+                base = code >= 500
+                        ? LocaleController.getString(R.string.AiErrorServer)
+                        : LocaleController.formatString(R.string.AiErrorHttp, code);
+                break;
         }
+        final String detail = extractErrorMessage(response);
+        return TextUtils.isEmpty(detail) ? base : base + "\n\n" + detail;
+    }
+
+    /**
+     * Перевірка зв'язку: питає в провайдера, які моделі доступні цьому ключу.
+     *
+     * <p>Існує саме через 404 на, здавалося б, правильній назві моделі:
+     * замість вгадування — спитати API, що він насправді віддає.
+     */
+    public static void listModels(Callback callback) {
+        final String provider = AiConfig.getProvider();
+        final String apiKey = AiKeyStorage.getKey(provider);
+        if (TextUtils.isEmpty(apiKey)) {
+            fail(callback, LocaleController.getString(R.string.AiErrorNoKey));
+            return;
+        }
+        if (!AiConfig.PROVIDER_GEMINI.equals(provider)) {
+            // В Anthropic список моделей фіксований і відомий заздалегідь,
+            // тож перевіряємо ключ найдешевшим можливим запитом.
+            request("Відповідай одним словом.", "ok", callback);
+            return;
+        }
+        Utilities.globalQueue.postRunnable(() -> {
+            HttpURLConnection connection = null;
+            try {
+                connection = (HttpURLConnection)
+                        new URL("https://generativelanguage.googleapis.com/v1beta/models").openConnection();
+                connection.setRequestMethod("GET");
+                connection.setConnectTimeout(CONNECT_TIMEOUT_MS);
+                connection.setReadTimeout(READ_TIMEOUT_MS);
+                connection.setRequestProperty("x-goog-api-key", apiKey);
+
+                final int code = connection.getResponseCode();
+                final String response = readStream(code >= 400
+                        ? connection.getErrorStream() : connection.getInputStream());
+                if (code != 200) {
+                    fail(callback, describeHttpError(code, response));
+                    return;
+                }
+                final JSONArray models = new JSONObject(response).optJSONArray("models");
+                final StringBuilder sb = new StringBuilder();
+                for (int i = 0; models != null && i < models.length(); i++) {
+                    final JSONObject m = models.optJSONObject(i);
+                    if (m == null) continue;
+                    // Цікавлять лише ті, що вміють generateContent — решта
+                    // (вбудовування, TTS) для нас безкорисні.
+                    final JSONArray methods = m.optJSONArray("supportedGenerationMethods");
+                    boolean ok = methods == null;
+                    for (int j = 0; methods != null && j < methods.length(); j++) {
+                        if ("generateContent".equals(methods.optString(j))) {
+                            ok = true;
+                            break;
+                        }
+                    }
+                    if (ok) {
+                        sb.append(m.optString("name").replace("models/", "")).append('\n');
+                    }
+                }
+                final String result = sb.toString().trim();
+                AndroidUtilities.runOnUIThread(() -> callback.onSuccess(
+                        result.isEmpty() ? "—" : result));
+            } catch (Throwable e) {
+                FileLog.e("AiClient: список моделей не отримано (" + e.getClass().getSimpleName() + ")");
+                fail(callback, LocaleController.getString(R.string.AiErrorNetwork));
+            } finally {
+                if (connection != null) {
+                    connection.disconnect();
+                }
+            }
+        });
     }
 
     /** Обидва провайдери кладуть пояснення в {@code error.message}. */

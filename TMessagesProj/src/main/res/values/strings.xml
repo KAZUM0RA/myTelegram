@@ -2,6 +2,8 @@
 <resources>
     <string name="AppName">MyTelegram</string>
     <string name="AppNameBeta">MyTelegram Beta</string>
+    <string name="AiCheckConnection">Check connection</string>
+    <string name="AiErrorModelNotFound">Model not found or unavailable for this key.</string>
     <string name="AiSectionProvider">Provider</string>
     <string name="AiProviderRow">Provider</string>
     <string name="AiSectionLinks">Keys and billing</string>

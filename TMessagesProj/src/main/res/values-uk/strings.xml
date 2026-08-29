@@ -2,6 +2,8 @@
 <resources>
     <string name="AppName">MyTelegram</string>
     <string name="AppNameBeta">MyTelegram Beta</string>
+    <string name="AiCheckConnection">Перевірити зв\'язок</string>
+    <string name="AiErrorModelNotFound">Модель не знайдена або недоступна цьому ключу.</string>
     <string name="AiSectionProvider">Провайдер</string>
     <string name="AiProviderRow">Провайдер</string>
     <string name="AiSectionLinks">Ключі й оплата</string>

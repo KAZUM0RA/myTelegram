@@ -81,6 +81,10 @@ public class AiSettingsActivity extends BaseFragment {
         keyCell = row(context, v -> showKeyDialog());
         root.addView(keyCell);
 
+        final TextSettingsCell checkCell = row(context, v -> checkConnection());
+        checkCell.setText(getString(R.string.AiCheckConnection), false);
+        root.addView(checkCell);
+
         root.addView(info(context, getString(R.string.AiKeyInfo)));
 
         // ── Посилання ──────────────────────────────────────────────────────
@@ -171,6 +175,67 @@ public class AiSettingsActivity extends BaseFragment {
                     : TranslateAlert2.capitalFirst(TranslateAlert2.languageName(code));
             langCell.setTextAndValue(getString(R.string.AiTargetLangRow), value, false);
         }
+    }
+
+    /**
+     * Перевірка зв'язку: показує моделі, доступні саме цьому ключу.
+     *
+     * <p>З'явилось після 404 на назві моделі, яку документація вважала
+     * чинною. Замість звіряння з документацією — питаємо сам API.
+     */
+    private void checkConnection() {
+        if (getParentActivity() == null) {
+            return;
+        }
+        final AlertDialog progress =
+                new AlertDialog(getParentActivity(), AlertDialog.ALERT_TYPE_SPINNER);
+        progress.setCanCancel(true);
+        progress.show();
+
+        org.telegram.ai.AiClient.listModels(new org.telegram.ai.AiClient.Callback() {
+            @Override
+            public void onSuccess(String text) {
+                progress.dismiss();
+                showTextDialog(getString(R.string.AiCheckConnection), text);
+            }
+
+            @Override
+            public void onError(String message) {
+                progress.dismiss();
+                showTextDialog(getString(R.string.AiCheckConnection), message);
+            }
+        });
+    }
+
+    /** Простий діалог із текстом, який можна виділити й скопіювати. */
+    private void showTextDialog(String title, String text) {
+        if (getParentActivity() == null) {
+            return;
+        }
+        final Context context = getParentActivity();
+
+        final android.widget.TextView textView = new android.widget.TextView(context);
+        textView.setTextSize(android.util.TypedValue.COMPLEX_UNIT_DIP, 14);
+        textView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+        textView.setText(text);
+        textView.setTextIsSelectable(true);
+
+        final ScrollView scroll = new ScrollView(context);
+        scroll.addView(textView, LayoutHelper.createScroll(
+                LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP));
+
+        final FrameLayout container = new FrameLayout(context);
+        container.addView(scroll, LayoutHelper.createFrame(
+                LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT,
+                Gravity.LEFT | Gravity.TOP, 24, 6, 24, 0));
+
+        final AlertDialog.Builder builder = new AlertDialog.Builder(context);
+        builder.setTitle(title);
+        builder.setView(container);
+        builder.setPositiveButton(getString(R.string.Copy), (dialog, which) ->
+                AndroidUtilities.addToClipboard(text));
+        builder.setNegativeButton(getString(R.string.Close), null);
+        builder.show();
     }
 
     // ── Діалоги ───────────────────────────────────────────────────────────
