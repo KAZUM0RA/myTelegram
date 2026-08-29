@@ -2,6 +2,9 @@
 <resources>
     <string name="AppName">MyTelegram</string>
     <string name="AppNameBeta">MyTelegram Beta</string>
+    <string name="AiSummary">Підсумок переписки (AI)</string>
+    <string name="AiSummaryTitle">Підсумок</string>
+    <string name="AiReply">Відповісти через AI</string>
     <string name="AiAutoTranslateEnabled">Автопереклад увімкнено для цього чату</string>
     <string name="AiAutoTranslateDisabled">Автопереклад вимкнено</string>
     <string name="AiAutoTranslate">Автопереклад через AI</string>

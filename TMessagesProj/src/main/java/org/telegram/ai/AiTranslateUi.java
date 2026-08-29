@@ -239,7 +239,8 @@ public class AiTranslateUi {
     }
 
     /** Прев'ю з можливістю відредагувати переклад перед підстановкою в поле. */
-    private static void showPreview(BaseFragment fragment, String translated,
+    /** Форк: доступно сусіднім класам пакета — той самий діалог потрібен і в AiAssistUi. */
+    static void showPreview(BaseFragment fragment, String translated,
                                     Utilities.Callback<String> onAccepted) {
         if (fragment.getParentActivity() == null) {
             return;

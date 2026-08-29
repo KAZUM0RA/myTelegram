@@ -2795,6 +2795,21 @@ public class ChatActivityEnterView extends FrameLayout implements
                             messageEditText.setSelection(messageEditText.getText().length());
                         });
             });
+            // Довге натискання — виправлення граматики й стилю. Окрему кнопку
+            // в цю панель уже не поставити, а обидві дії стосуються того самого
+            // тексту, тож логічно тримати їх на одному елементі.
+            aiTranslateButton.setOnLongClickListener(v -> {
+                if (parentFragment == null || messageEditText == null) {
+                    return false;
+                }
+                org.telegram.ai.AiAssistUi.improveStyle(
+                        parentFragment, messageEditText.getText(),
+                        corrected -> {
+                            messageEditText.setText(corrected);
+                            messageEditText.setSelection(messageEditText.getText().length());
+                        });
+                return true;
+            });
 
             if (chatMode != ChatActivity.MODE_WELCOME_MESSAGES) {
                 notifyButton = new ImageView(context);

@@ -448,6 +448,8 @@ public class ChatActivity extends BaseFragment implements
     private ActionBarMenuItem.Item translateItem;
     /** Форк: пункт автоперекладу через Claude. */
     private ActionBarMenuItem.Item aiAutoTranslateItem;
+    /** Форк: пункт підсумку переписки. */
+    private ActionBarMenuItem.Item aiSummaryItem;
     private ActionBarMenuItem searchIconItem;
     private ActionBarMenu.LazyItem audioCallIconItem;
     private boolean searchItemVisible;
@@ -1232,6 +1234,8 @@ public class ChatActivity extends BaseFragment implements
      * апстріму (там ~116), щоб нові пункти в наступних версіях не зіткнулися.
      */
     public final static int OPTION_AI_TRANSLATE = 900;
+    /** Форк: чернетка відповіді на вибране повідомлення. */
+    public final static int OPTION_AI_REPLY = 901;
     public final static int OPTION_TRANSCRIBE = 30;
     public final static int OPTION_HIDE_SPONSORED_MESSAGE = 31;
     public final static int OPTION_VIEW_IN_TOPIC = 32;
@@ -1682,6 +1686,8 @@ public class ChatActivity extends BaseFragment implements
     private final static int translate = 62;
     /** Форк: перемикач автоперекладу через Claude. 900 — далеко від нумерації апстріму. */
     private final static int ai_autotranslate = 900;
+    /** Форк: підсумок переписки. */
+    private final static int ai_summary = 901;
     private final static int scheduled = 63;
     private final static int edit_quick_reply = 64;
 
@@ -3997,6 +4003,8 @@ public class ChatActivity extends BaseFragment implements
                                     : R.string.AiAutoTranslateDisabled)
                     ).show();
                     checkTranslation(true);
+                } else if (id == ai_summary) {
+                    org.telegram.ai.AiAssistUi.summarize(ChatActivity.this, messages);
                 } else if (id == call || id == video_call) {
                     if (currentUser != null && getParentActivity() != null) {
                         VoIPHelper.startCall(currentUser, id == video_call, userInfo != null && userInfo.video_calls_available, getParentActivity(), getMessagesController().getUserFull(currentUser.id), getAccountInstance());
@@ -4453,6 +4461,7 @@ public class ChatActivity extends BaseFragment implements
             // доступний лише з Premium, тож це не дублювання, а заміна тієї
             // функції власним двигуном.
             aiAutoTranslateItem = headerItem.lazilyAddSubItem(ai_autotranslate, R.drawable.outline_ai_translate2, LocaleController.getString(R.string.AiAutoTranslate));
+            aiSummaryItem = headerItem.lazilyAddSubItem(ai_summary, R.drawable.msg_list, LocaleController.getString(R.string.AiSummary));
             updateAiAutoTranslateItem();
             if (currentChat != null && !currentChat.creator && !ChatObject.hasAdminRights(currentChat)) {
                 headerItem.lazilyAddSubItem(report, R.drawable.msg_report, LocaleController.getString(R.string.ReportChat));
@@ -11290,12 +11299,18 @@ public class ChatActivity extends BaseFragment implements
         }
         if (!org.telegram.ai.AiConfig.isReady()) {
             aiAutoTranslateItem.setVisibility(View.GONE);
+            if (aiSummaryItem != null) {
+                aiSummaryItem.setVisibility(View.GONE);
+            }
             return;
         }
         aiAutoTranslateItem.setVisibility(View.VISIBLE);
         aiAutoTranslateItem.setText(LocaleController.getString(
                 org.telegram.ai.AiAutoTranslate.isEnabled(getDialogId())
                         ? R.string.AiAutoTranslateOff : R.string.AiAutoTranslate));
+        if (aiSummaryItem != null) {
+            aiSummaryItem.setVisibility(View.VISIBLE);
+        }
     }
 
     private Animator infoTopViewAnimator;
@@ -33414,6 +33429,21 @@ public class ChatActivity extends BaseFragment implements
                 presentFragment(fragment);
                 break;
             }
+            // Форк: чернетка відповіді на вибране повідомлення.
+            case OPTION_AI_REPLY: {
+                if (selectedObject != null) {
+                    final MessageObject replyTo = selectedObject;
+                    org.telegram.ai.AiAssistUi.suggestReply(this, replyTo, text -> {
+                        if (chatActivityEnterView != null) {
+                            // Ставимо відповідь у поле й підтягуємо контекст:
+                            // без цього незрозуміло, на що саме відповідь.
+                            showFieldPanelForReply(replyTo);
+                            chatActivityEnterView.setFieldText(text);
+                        }
+                    });
+                }
+                break;
+            }
             // Форк: переклад вибраного повідомлення через Claude.
             case OPTION_AI_TRANSLATE: {
                 if (selectedObject != null) {
@@ -45881,6 +45911,9 @@ public class ChatActivity extends BaseFragment implements
                         items.add(LocaleController.getString(R.string.AiTranslateMenuItem));
                         options.add(OPTION_AI_TRANSLATE);
                         icons.add(R.drawable.outline_ai_translate2);
+                        items.add(LocaleController.getString(R.string.AiReply));
+                        options.add(OPTION_AI_REPLY);
+                        icons.add(R.drawable.menu_reply);
                     }
                 }
                 if (message.canEditMessage(currentChat) && message.type != MessageObject.TYPE_POLL || chatMode == MODE_WELCOME_MESSAGES) {
@@ -46236,6 +46269,9 @@ public class ChatActivity extends BaseFragment implements
                         items.add(LocaleController.getString(R.string.AiTranslateMenuItem));
                         options.add(OPTION_AI_TRANSLATE);
                         icons.add(R.drawable.outline_ai_translate2);
+                        items.add(LocaleController.getString(R.string.AiReply));
+                        options.add(OPTION_AI_REPLY);
+                        icons.add(R.drawable.menu_reply);
                     }
                 }
                 if (allowEdit || chatMode == MODE_WELCOME_MESSAGES) {
