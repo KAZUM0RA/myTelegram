@@ -1444,6 +1444,13 @@ public class LocaleController {
     }
 
     private String getStringInternal(String key, String fallback, int fallbackRes, int res) {
+        // Форк: словник підмінює написи. Стоїть найпершим навмисно — інакше
+        // хмарний рядок Telegram перекрив би підміну, як це вже сталося з
+        // назвою застосунку. У стандартному режимі це одна перевірка рядка.
+        final String replaced = org.telegram.wordpack.WordPack.override(key);
+        if (replaced != null) {
+            return replaced;
+        }
         final boolean useCloud = BuildVars.USE_CLOUD_STRINGS && !isAppNameKey(key);
         String value = useCloud ? localeValues.get(key) : null;
         if (value == null) {

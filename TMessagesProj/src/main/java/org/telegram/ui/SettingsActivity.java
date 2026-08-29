@@ -701,6 +701,9 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         // щоб нові пункти в наступних версіях не зіткнулися з нашим.
         // У підзаголовку — стан, щоб було видно наявність ключа без заходу.
         items.add(SettingCell.Factory.of(900, IconBackgroundColors.CYAN.top, IconBackgroundColors.CYAN.bottom, R.drawable.outline_ai_translate2, getString(R.string.AiSettingsTitle), getString(org.telegram.ai.AiConfig.isReady() ? R.string.AiStateOn : R.string.AiStateNoKey)));
+        // Форк: словник написів. У підзаголовку — назва активного, щоб було
+        // видно вибір без заходу всередину.
+        items.add(SettingCell.Factory.of(901, IconBackgroundColors.ORANGE.top, IconBackgroundColors.ORANGE.bottom, R.drawable.settings_language, getString(R.string.WordPackTitle), currentWordPackName()));
 
         items.add(UItem.asShadow(null));
 
@@ -755,6 +758,20 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         }
 
         items.add(UItem.asCustomShadow(versionView));
+    }
+
+    /** Форк: назва активного словника для підзаголовка рядка налаштувань. */
+    private String currentWordPackName() {
+        final String active = org.telegram.wordpack.WordPack.getActiveId();
+        if (android.text.TextUtils.isEmpty(active)) {
+            return getString(R.string.WordPackStandard);
+        }
+        for (String[] pack : org.telegram.wordpack.WordPack.available()) {
+            if (pack[0].equals(active)) {
+                return pack[1];
+            }
+        }
+        return getString(R.string.WordPackStandard);
     }
 
     private void presentSettingFragment(BaseFragment fragment) {
@@ -842,6 +859,9 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 break;
             case 900: // Форк: AI-асистент
                 presentSettingFragment(new AiSettingsActivity());
+                break;
+            case 901: // Форк: словник написів
+                presentSettingFragment(new WordPackActivity());
                 break;
 
             case 11:

@@ -1,0 +1,98 @@
+# Качина мова
+#
+# Формат: ключ = текст. Ключ — це ім'я рядка зі strings.xml, а не саме слово.
+# Одне слово трапляється в десятках рядків, тому підміняємо за ключем: так
+# «Видалити» стане «втопити у ставку» саме в меню, а не всередині чужих фраз.
+#
+# Щоб дописати слово: знайди його ключ пошуком по
+# TMessagesProj/src/main/res/values/strings.xml за англійським текстом,
+# наприклад <string name="Settings">Settings</string> — ключ тут Settings.
+#
+# Рядки з # — коментарі. Порожні рядки дозволені.
+
+_назва = Качина мова
+
+# ── Дії ──────────────────────────────────────────────────────────────────
+Send = качка летить
+Reply = крякнути
+MessageOptionsReply = крякнути
+Forward = перекрякати
+MessageOptionsForward = перекрякати
+Delete = втопити у ставку
+FilterDeleteItem = втопити у ставку
+SwipeSettingsDelete = втопити у ставку
+SwipeDeleteChat = втопити у ставку
+BlockUserMultiTitle = вигнати зі ставка
+ReportSpamUserNoCaps = вигнати зі ставка
+LeaveMega = відплисти від зграї
+LeaveMegaMenu = відплисти від зграї
+AddToGroup = пустити у ставок
+
+# ── Місця ────────────────────────────────────────────────────────────────
+SavedMessages = мій ставок
+Archive = старий ставок
+SwipeSettingsArchive = старий ставок
+ArchiveSearchFilter = старий ставок
+Settings = качині порядки
+SETTINGS = КАЧИНІ ПОРЯДКИ
+MainTabsSettings = качині порядки
+Contacts = ставок
+FilterContacts = ставок
+MainTabsContacts = ставок
+MainTabsProfile = причесати пір'я
+UserColorTabProfile = причесати пір'я
+ChannelColorTabProfile = причесати пір'я
+
+# ── Сутності ─────────────────────────────────────────────────────────────
+AccDescrGroup = зграя
+AccDescrChannel = качиний вісник
+ProfileChannel = качиний вісник
+ChannelAdmin = головний селезень
+ChatTagAdmin = головний селезень
+ChannelMembers = каченята
+GroupMembers = каченята
+MembersOverviewTitle = каченята
+ChannelSubscribers = каченятка
+Message = крякальник
+TypeMessage = крякальник
+ProfileActionsMessage = крякальник
+PinnedMessage = привутькане
+
+# ── Стан ─────────────────────────────────────────────────────────────────
+Typing = крякає…
+IsTyping = крякає…
+RecordingAudio = планує щось волати…
+IsRecordingAudio = %1$s планує щось волати…
+SendingAudio = качка летить…
+AccDescrUserOnline = на ставку
+VoipOfflineTitle = полетіла
+Lately = недавно крякала
+Draft = недокрякане
+StoryDraft = недокрякане
+SwipeMarkAsUnread = неклюване
+FilterNameUnread = неклюване
+SwipeMarkAsRead = прокрякано
+SwipeSettingsRead = прокрякано
+FilterRead = прокрякано
+
+# ── Вміст ────────────────────────────────────────────────────────────────
+Search = де вуті?
+SearchPostsButton = де вуті?
+Notifications = кряк!
+SettingsNotifications = кряк!
+Reactions = кря
+NotificationsReactions = кря
+AccDescrLike = дзьобаю
+AttachAudio = аудіокряк
+AttachRound = відеокряк
+AccDescrRoundVideo = відеокряк
+StickersName = качині наліпки
+AccDescrStickers = качині наліпки
+Emoji = качині мордочки
+ChatEmoji = качині мордочки
+AttachGif = жвавокряк
+FavoriteStickers = мегакряк
+FavoriteStickersShort = мегакряк
+Call = поклик зграї
+ProfileActionsCall = поклик зграї
+VideoCall = побачення на ставку

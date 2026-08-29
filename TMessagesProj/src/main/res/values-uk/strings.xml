@@ -30,6 +30,9 @@
     <string name="AiTranslateInsert">Вставити</string>
     <string name="AiStateOn">увімкнено</string>
     <string name="AiStateNoKey">без ключа</string>
+    <string name="WordPackTitle">Мова застосунку</string>
+    <string name="WordPackStandard">Звичайна</string>
+    <string name="WordPackInfo">Змінює написи кнопок і розділів. На повідомлення й на мову інтерфейсу не впливає.</string>
     <string name="AiSettingsTitle">AI-асистент</string>
     <string name="AiSectionKey">Ключ Anthropic API</string>
     <string name="AiKeyRow">Ключ API</string>

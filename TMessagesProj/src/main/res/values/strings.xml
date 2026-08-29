@@ -30,6 +30,9 @@
     <string name="AiTranslateInsert">Insert</string>
     <string name="AiStateOn">on</string>
     <string name="AiStateNoKey">no key</string>
+    <string name="WordPackTitle">App wording</string>
+    <string name="WordPackStandard">Standard</string>
+    <string name="WordPackInfo">Replaces the wording of buttons and sections. Does not affect messages or the interface language.</string>
     <string name="AiSettingsTitle">AI assistant</string>
     <string name="AiSectionKey">Anthropic API key</string>
     <string name="AiKeyRow">API key</string>
