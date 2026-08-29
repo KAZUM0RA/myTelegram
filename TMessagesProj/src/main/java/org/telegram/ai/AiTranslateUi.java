@@ -75,15 +75,29 @@ public class AiTranslateUi {
             return;
         }
 
-        final AlertDialog progress = new AlertDialog(context, AlertDialog.ALERT_TYPE_SPINNER);
+        doTranslate(fragment, text.toString(), resolveTargetLanguage(dialogId), onAccepted);
+    }
+
+    /**
+     * Один прохід перекладу з показом результату.
+     *
+     * <p>Винесено окремо, щоб «Інша мова» в прев'ю могла перекласти той самий
+     * оригінал ще раз — не той, що вже перекладений, інакше кожна зміна мови
+     * була б перекладом перекладу з накопиченням спотворень.
+     */
+    private static void doTranslate(BaseFragment fragment, String originalText,
+                                    String languageName, Utilities.Callback<String> onAccepted) {
+        final AlertDialog progress =
+                new AlertDialog(fragment.getParentActivity(), AlertDialog.ALERT_TYPE_SPINNER);
         progress.setCanCancel(true);
         progress.show();
 
-        AiClient.translate(text.toString(), resolveTargetLanguage(dialogId), new AiClient.Callback() {
+        AiClient.translate(originalText, languageName, new AiClient.Callback() {
             @Override
             public void onSuccess(String translated) {
                 progress.dismiss();
-                showPreview(fragment, translated, onAccepted);
+                showPreview(fragment, translated, onAccepted,
+                        () -> pickLanguageAndRetranslate(fragment, originalText, onAccepted));
             }
 
             @Override
@@ -92,6 +106,32 @@ public class AiTranslateUi {
                 BulletinFactory.of(fragment).createErrorBulletin(message).show();
             }
         });
+    }
+
+    /** Вибір мови для конкретного перекладу, без зміни налаштувань. */
+    private static void pickLanguageAndRetranslate(BaseFragment fragment, String originalText,
+                                                   Utilities.Callback<String> onAccepted) {
+        if (fragment.getParentActivity() == null) {
+            return;
+        }
+        final java.util.ArrayList<org.telegram.messenger.TranslateController.Language> languages =
+                org.telegram.messenger.TranslateController.getLanguages();
+
+        final CharSequence[] titles = new CharSequence[languages.size()];
+        for (int i = 0; i < languages.size(); i++) {
+            titles[i] = languages.get(i).displayName;
+        }
+
+        final AlertDialog.Builder builder = new AlertDialog.Builder(fragment.getParentActivity());
+        builder.setTitle(getString(R.string.AiTargetLangRow));
+        builder.setItems(titles, (dialog, which) -> {
+            if (which >= 0 && which < languages.size()) {
+                doTranslate(fragment, originalText,
+                        TranslateAlert2.languageName(languages.get(which).code), onAccepted);
+            }
+        });
+        builder.setNegativeButton(getString(R.string.Cancel), null);
+        builder.show();
     }
 
     /**
@@ -177,20 +217,16 @@ public class AiTranslateUi {
      * Мова, якою читає користувач: явно задана в налаштуваннях або мова
      * інтерфейсу застосунку.
      */
+    /**
+     * Мова, якою читає користувач.
+     *
+     * <p>Навмисно НЕ бере налаштування «мова перекладу» — воно стосується
+     * лише вихідних. Вхідні завжди перекладаються на мову системи: читати
+     * їх чужою мовою сенсу немає.
+     */
     private static String myLanguageName() {
-        final String configured = AiConfig.getTargetLanguage();
-        if (!TextUtils.isEmpty(configured)) {
-            return TranslateAlert2.languageName(configured);
-        }
-        try {
-            final String name = TranslateAlert2.languageName(
-                    LocaleController.getInstance().getCurrentLocale().getLanguage());
-            if (!TextUtils.isEmpty(name)) {
-                return name;
-            }
-        } catch (Throwable ignored) {
-        }
-        return AiConfig.TARGET_LANG_AUTO;
+        final String name = TranslateAlert2.languageName(AiConfig.getReadingLanguageCode());
+        return TextUtils.isEmpty(name) ? AiConfig.TARGET_LANG_AUTO : name;
     }
 
     /** Оригінал зверху приглушено, переклад під ним — той самий порядок, що в брифі. */
@@ -241,7 +277,18 @@ public class AiTranslateUi {
     /** Прев'ю з можливістю відредагувати переклад перед підстановкою в поле. */
     /** Форк: доступно сусіднім класам пакета — той самий діалог потрібен і в AiAssistUi. */
     static void showPreview(BaseFragment fragment, String translated,
-                                    Utilities.Callback<String> onAccepted) {
+                            Utilities.Callback<String> onAccepted) {
+        showPreview(fragment, translated, onAccepted, null);
+    }
+
+    /**
+     *  onChangeLanguage якщо не null — у діалозі з'являється третя кнопка
+     *                         «Інша мова». Для чернетки відповіді й виправлення
+     *                         стилю вона зайва, тож там передається null.
+     */
+    static void showPreview(BaseFragment fragment, String translated,
+                            Utilities.Callback<String> onAccepted,
+                            Runnable onChangeLanguage) {
         if (fragment.getParentActivity() == null) {
             return;
         }
@@ -273,6 +320,9 @@ public class AiTranslateUi {
             }
         });
         builder.setNegativeButton(getString(R.string.Cancel), null);
+        if (onChangeLanguage != null) {
+            builder.setNeutralButton(getString(R.string.AiOtherLanguage), (dialog, which) -> onChangeLanguage.run());
+        }
         builder.show();
 
         AndroidUtilities.runOnUIThread(() -> {

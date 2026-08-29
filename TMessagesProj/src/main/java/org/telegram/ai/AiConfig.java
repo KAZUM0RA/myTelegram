@@ -152,8 +152,33 @@ public class AiConfig {
 
     // ── Мова ─────────────────────────────────────────────────────────────
 
+    /**
+     * Мова, на яку перекладаються ВИХІДНІ повідомлення.
+     *
+     * <p>Стосується лише того, що ти надсилаєш. Вхідні завжди перекладаються
+     * на мову системи — читати їх іншою мовою сенсу немає, а от писати можна
+     * кому завгодно.
+     *
+     * <p>{@link #TARGET_LANG_AUTO} означає «мова співрозмовника», визначена
+     * за його останніми повідомленнями.
+     */
     public static String getTargetLanguage() {
         return prefs().getString(PREF_TARGET_LANG, TARGET_LANG_AUTO);
+    }
+
+    /**
+     * Мова, якою читає користувач: мова інтерфейсу застосунку.
+     *
+     * <p>Свідомо не залежить від налаштування вище: вхідні перекладаються
+     * на мову системи завжди, незалежно від того, якою мовою ти зараз пишеш.
+     */
+    public static String getReadingLanguageCode() {
+        try {
+            return org.telegram.messenger.LocaleController.getInstance()
+                    .getCurrentLocale().getLanguage();
+        } catch (Throwable ignored) {
+            return null;
+        }
     }
 
     public static void setTargetLanguage(String langCode) {

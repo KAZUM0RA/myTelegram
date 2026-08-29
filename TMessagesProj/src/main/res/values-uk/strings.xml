@@ -2,6 +2,7 @@
 <resources>
     <string name="AppName">MyTelegram</string>
     <string name="AppNameBeta">MyTelegram Beta</string>
+    <string name="AiOtherLanguage">Інша мова</string>
     <string name="AiCheckConnection">Перевірити зв\'язок</string>
     <string name="AiErrorModelNotFound">Модель не знайдена або недоступна цьому ключу.</string>
     <string name="AiSectionProvider">Провайдер</string>
@@ -21,8 +22,8 @@
     <string name="AiAutoTranslate">Автопереклад через AI</string>
     <string name="AiAutoTranslateOff">Вимкнути автопереклад AI</string>
     <string name="AiTranslateMenuItem">Перекласти через AI</string>
-    <string name="AiTargetLangRow">Мова перекладу</string>
-    <string name="AiTargetLangAuto">Автоматично</string>
+    <string name="AiTargetLangRow">Мова для відправки</string>
+    <string name="AiTargetLangAuto">Мова співрозмовника</string>
     <string name="AiTranslateButton">Перекласти через AI</string>
     <string name="AiTranslatePreviewTitle">Переклад</string>
     <string name="AiTranslateInsert">Вставити</string>

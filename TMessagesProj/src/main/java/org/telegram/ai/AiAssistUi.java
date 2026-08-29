@@ -281,13 +281,10 @@ public class AiAssistUi {
         builder.show();
     }
 
-    /** Мова, якою користувач читає — для підсумку. */
+    /** Мова, якою користувач читає — завжди мова системи. */
     private static String myLanguage() {
-        final String configured = AiConfig.getTargetLanguage();
         try {
-            final String code = TextUtils.isEmpty(configured)
-                    ? LocaleController.getInstance().getCurrentLocale().getLanguage()
-                    : configured;
+            final String code = AiConfig.getReadingLanguageCode();
             final String name = org.telegram.ui.Components.TranslateAlert2.languageName(code);
             if (!TextUtils.isEmpty(name)) {
                 // Назву мови віддаємо як є, у називному відмінку. Відмінювати

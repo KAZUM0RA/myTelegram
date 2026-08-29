@@ -2,6 +2,7 @@
 <resources>
     <string name="AppName">MyTelegram</string>
     <string name="AppNameBeta">MyTelegram Beta</string>
+    <string name="AiOtherLanguage">Other language</string>
     <string name="AiCheckConnection">Check connection</string>
     <string name="AiErrorModelNotFound">Model not found or unavailable for this key.</string>
     <string name="AiSectionProvider">Provider</string>
@@ -21,8 +22,8 @@
     <string name="AiAutoTranslate">AI auto-translate</string>
     <string name="AiAutoTranslateOff">Turn off AI auto-translate</string>
     <string name="AiTranslateMenuItem">Translate with AI</string>
-    <string name="AiTargetLangRow">Translate into</string>
-    <string name="AiTargetLangAuto">Automatically</string>
+    <string name="AiTargetLangRow">Language for outgoing</string>
+    <string name="AiTargetLangAuto">Interlocutor’s language</string>
     <string name="AiTranslateButton">Translate with AI</string>
     <string name="AiTranslatePreviewTitle">Translation</string>
     <string name="AiTranslateInsert">Insert</string>

@@ -178,18 +178,12 @@ public class AiAutoTranslate {
                 .postNotificationName(NotificationCenter.messageTranslated, messageObject);
     }
 
-    /** Код мови, якою читає користувач. */
+    /**
+     * Код мови, якою читає користувач — завжди мова системи.
+     * Налаштування «мова перекладу» стосується лише вихідних.
+     */
     private static String targetLanguageCode() {
-        final String configured = AiConfig.getTargetLanguage();
-        if (!TextUtils.isEmpty(configured)) {
-            return configured;
-        }
-        try {
-            return org.telegram.messenger.LocaleController.getInstance()
-                    .getCurrentLocale().getLanguage();
-        } catch (Throwable ignored) {
-            return null;
-        }
+        return AiConfig.getReadingLanguageCode();
     }
 
     private static android.content.SharedPreferences prefs() {
