@@ -12,8 +12,12 @@ import android.text.InputType;
 import android.text.TextUtils;
 import android.view.Gravity;
 import android.widget.FrameLayout;
+import android.widget.LinearLayout;
+import android.widget.ScrollView;
+import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
@@ -121,6 +125,117 @@ public class AiTranslateUi {
             // пішло не так, краще перекласти за контекстом, ніж не перекласти.
         }
         return AiConfig.TARGET_LANG_AUTO;
+    }
+
+    /**
+     * Переклад вхідного повідомлення.
+     *
+     * <p>Цільова мова тут протилежна до {@link #translateForSending}: вхідне
+     * перекладаємо <b>на свою</b> мову, а не на мову співрозмовника.
+     *
+     * <p>Показуємо оригінал і переклад разом, а не замінюємо текст у чаті, як
+     * робить вбудований переклад Telegram. Так видно, що саме було сказано, —
+     * важливо, коли переклад виглядає дивно і треба звірити з першоджерелом.
+     */
+    public static void translateIncoming(BaseFragment fragment, CharSequence original) {
+        if (fragment == null || fragment.getParentActivity() == null) {
+            return;
+        }
+        if (TextUtils.isEmpty(original) || TextUtils.isEmpty(original.toString().trim())) {
+            BulletinFactory.of(fragment)
+                    .createErrorBulletin(getString(R.string.AiErrorEmptyText))
+                    .show();
+            return;
+        }
+        if (!AiConfig.isReady()) {
+            BulletinFactory.of(fragment)
+                    .createErrorBulletin(getString(R.string.AiErrorNoKey))
+                    .show();
+            return;
+        }
+
+        final AlertDialog progress = new AlertDialog(fragment.getParentActivity(), AlertDialog.ALERT_TYPE_SPINNER);
+        progress.setCanCancel(true);
+        progress.show();
+
+        AiClient.translate(original.toString(), myLanguageName(), new AiClient.Callback() {
+            @Override
+            public void onSuccess(String translated) {
+                progress.dismiss();
+                showIncomingResult(fragment, original.toString(), translated);
+            }
+
+            @Override
+            public void onError(String message) {
+                progress.dismiss();
+                BulletinFactory.of(fragment).createErrorBulletin(message).show();
+            }
+        });
+    }
+
+    /**
+     * Мова, якою читає користувач: явно задана в налаштуваннях або мова
+     * інтерфейсу застосунку.
+     */
+    private static String myLanguageName() {
+        final String configured = AiConfig.getTargetLanguage();
+        if (!TextUtils.isEmpty(configured)) {
+            return TranslateAlert2.languageName(configured);
+        }
+        try {
+            final String name = TranslateAlert2.languageName(
+                    LocaleController.getInstance().getCurrentLocale().getLanguage());
+            if (!TextUtils.isEmpty(name)) {
+                return name;
+            }
+        } catch (Throwable ignored) {
+        }
+        return AiConfig.TARGET_LANG_AUTO;
+    }
+
+    /** Оригінал зверху приглушено, переклад під ним — той самий порядок, що в брифі. */
+    private static void showIncomingResult(BaseFragment fragment, String original, String translated) {
+        if (fragment.getParentActivity() == null) {
+            return;
+        }
+        final Context context = fragment.getParentActivity();
+
+        final LinearLayout column = new LinearLayout(context);
+        column.setOrientation(LinearLayout.VERTICAL);
+
+        final TextView originalView = new TextView(context);
+        originalView.setTextSize(android.util.TypedValue.COMPLEX_UNIT_DIP, 14);
+        originalView.setTextColor(Theme.getColor(Theme.key_dialogTextGray2));
+        originalView.setText(original);
+        column.addView(originalView, LayoutHelper.createLinear(
+                LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 10));
+
+        final TextView translatedView = new TextView(context);
+        translatedView.setTextSize(android.util.TypedValue.COMPLEX_UNIT_DIP, 16);
+        translatedView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+        translatedView.setText(translated);
+        // Переклад можна виділити й скопіювати — оригінал уже є в чаті,
+        // а от переклад більше ніде не збережеться.
+        translatedView.setTextIsSelectable(true);
+        column.addView(translatedView, LayoutHelper.createLinear(
+                LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+
+        final ScrollView scroll = new ScrollView(context);
+        scroll.addView(column, LayoutHelper.createScroll(
+                LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP));
+
+        final FrameLayout container = new FrameLayout(context);
+        container.addView(scroll, LayoutHelper.createFrame(
+                LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT,
+                Gravity.LEFT | Gravity.TOP, 24, 6, 24, 0));
+
+        final AlertDialog.Builder builder = new AlertDialog.Builder(context);
+        builder.setTitle(getString(R.string.AiTranslatePreviewTitle));
+        builder.setView(container);
+        builder.setPositiveButton(getString(R.string.Copy), (dialog, which) ->
+                AndroidUtilities.addToClipboard(translated));
+        builder.setNegativeButton(getString(R.string.Close), null);
+        builder.show();
     }
 
     /** Прев'ю з можливістю відредагувати переклад перед підстановкою в поле. */

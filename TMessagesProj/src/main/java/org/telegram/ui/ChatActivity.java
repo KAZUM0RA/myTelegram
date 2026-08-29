@@ -1225,6 +1225,11 @@ public class ChatActivity extends BaseFragment implements
     public final static int OPTION_VIEW_REPLIES_OR_THREAD = 27;
     public final static int OPTION_STATISTICS = 28;
     public final static int OPTION_TRANSLATE = 29;
+    /**
+     * Форк: переклад через Claude. Номер 900 навмисно далеко від нумерації
+     * апстріму (там ~116), щоб нові пункти в наступних версіях не зіткнулися.
+     */
+    public final static int OPTION_AI_TRANSLATE = 900;
     public final static int OPTION_TRANSCRIBE = 30;
     public final static int OPTION_HIDE_SPONSORED_MESSAGE = 31;
     public final static int OPTION_VIEW_IN_TOPIC = 32;
@@ -33359,6 +33364,14 @@ public class ChatActivity extends BaseFragment implements
                 presentFragment(fragment);
                 break;
             }
+            // Форк: переклад вибраного повідомлення через Claude.
+            case OPTION_AI_TRANSLATE: {
+                if (selectedObject != null) {
+                    final CharSequence text = selectedObject.getMessageTextToTranslate(selectedObjectGroup, null);
+                    org.telegram.ai.AiTranslateUi.translateIncoming(this, text);
+                }
+                break;
+            }
             case OPTION_COPY: {
                 final TL_iv.RichMessage copyRichMessage = selectedObject.messageOwner != null ? selectedObject.messageOwner.rich_message : null;
                 if (selectedObject.isDice()) {
@@ -45811,6 +45824,14 @@ public class ChatActivity extends BaseFragment implements
                     items.add(LocaleController.getString(R.string.TranslateMessage));
                     options.add(OPTION_TRANSLATE);
                     icons.add(R.drawable.msg_translate);
+                    // Форк: переклад через Claude — окремим пунктом поруч із
+                    // вбудованим. Вбудований безкоштовний, наш зберігає тон;
+                    // вибір лишаємо за користувачем, а не вирішуємо за нього.
+                    if (org.telegram.ai.AiConfig.isReady()) {
+                        items.add(LocaleController.getString(R.string.AiTranslateMenuItem));
+                        options.add(OPTION_AI_TRANSLATE);
+                        icons.add(R.drawable.outline_ai_translate2);
+                    }
                 }
                 if (message.canEditMessage(currentChat) && message.type != MessageObject.TYPE_POLL || chatMode == MODE_WELCOME_MESSAGES) {
                     items.add(LocaleController.getString(R.string.Edit));
@@ -46158,6 +46179,14 @@ public class ChatActivity extends BaseFragment implements
                     items.add(LocaleController.getString(R.string.TranslateMessage));
                     options.add(OPTION_TRANSLATE);
                     icons.add(R.drawable.msg_translate);
+                    // Форк: переклад через Claude — окремим пунктом поруч із
+                    // вбудованим. Вбудований безкоштовний, наш зберігає тон;
+                    // вибір лишаємо за користувачем, а не вирішуємо за нього.
+                    if (org.telegram.ai.AiConfig.isReady()) {
+                        items.add(LocaleController.getString(R.string.AiTranslateMenuItem));
+                        options.add(OPTION_AI_TRANSLATE);
+                        icons.add(R.drawable.outline_ai_translate2);
+                    }
                 }
                 if (allowEdit || chatMode == MODE_WELCOME_MESSAGES) {
                     items.add(LocaleController.getString(R.string.Edit));
