@@ -47,7 +47,7 @@
     <string name="AiErrorNetwork">Немає зв\'язку з AI-сервісом. Перевір інтернет.</string>
     <string name="AiErrorUnknown">Запит не вдався. Спробуй ще раз.</string>
     <string name="AiErrorInvalidKey">Ключ API відхилено. Перевір його в Налаштування → AI-асистент.</string>
-    <string name="AiErrorRateLimit">Забагато запитів. Спробуй за мить.</string>
+    <string name="AiErrorRateLimit">Запит відхилено: ліміт або вичерпані кредити.</string>
     <string name="AiErrorBadRequest">Сервіс відхилив запит.</string>
     <string name="AiErrorServer">AI-сервіс недоступний. Спробуй пізніше.</string>
     <string name="AiErrorHttp">Помилка запиту (%1$d).</string>

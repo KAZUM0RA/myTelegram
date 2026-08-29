@@ -47,7 +47,7 @@
     <string name="AiErrorNetwork">No connection to the AI service. Check your internet.</string>
     <string name="AiErrorUnknown">Request failed. Try again.</string>
     <string name="AiErrorInvalidKey">API key rejected. Check it in Settings → AI assistant.</string>
-    <string name="AiErrorRateLimit">Too many requests. Try again in a moment.</string>
+    <string name="AiErrorRateLimit">Request rejected: rate limit or credits depleted.</string>
     <string name="AiErrorBadRequest">The service rejected the request.</string>
     <string name="AiErrorServer">The AI service is unavailable. Try later.</string>
     <string name="AiErrorHttp">Request error (%1$d).</string>
