@@ -48,19 +48,22 @@ public class AiConfig {
 
     public static final String MODEL_GEMINI_FLASH_LITE = "gemini-3.5-flash-lite";
     public static final String MODEL_GEMINI_FLASH = "gemini-3.7-flash";
-    /** Спеціалізована модель розпізнавання мовлення. */
-    public static final String MODEL_GEMINI_TRANSCRIBE = "gemini-3.5-transcribe";
-
     /**
      * Модель для голосових, зафіксована окремо від моделі для тексту.
      *
-     * <p>Джерела Google суперечать одне одному щодо того, які саме моделі
-     * приймають аудіо: сторінка цін наводить вартість аудіо для Flash-Lite,
-     * сторінка моделей цього не підтверджує. Тому голосові не залежать від
-     * вибору моделі для тексту, а «Перевірити зв'язок» у налаштуваннях
-     * показує, що насправді доступне конкретному ключу.
+     * <p>Спершу тут стояла спеціалізована {@code gemini-3.5-transcribe},
+     * але вона виявилася непридатною: інструкцію відхиляє помилкою
+     * {@code Developer instruction is not enabled for this model}, а без
+     * інструкції повертає HTTP 200 з порожньою частиною. У логах було видно,
+     * що аудіо вона отримує ({@code промт=201 токен}) і не породжує жодного
+     * токена у відповідь.
+     *
+     * <p>Звичайний Flash-Lite приймає аудіо нативно і виконує інструкції,
+     * тож голосові йдуть через нього. Голосові й далі не залежать від вибору
+     * моделі для тексту, а «Перевірити зв'язок» у налаштуваннях показує, що
+     * насправді доступне конкретному ключу.
      */
-    public static final String MODEL_GEMINI_AUDIO = MODEL_GEMINI_TRANSCRIBE;
+    public static final String MODEL_GEMINI_AUDIO = MODEL_GEMINI_FLASH_LITE;
 
     public static String[][] availableModels(String provider) {
         if (PROVIDER_GEMINI.equals(provider)) {

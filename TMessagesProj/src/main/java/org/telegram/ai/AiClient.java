@@ -198,6 +198,10 @@ public class AiClient {
             if (code == 200) {
                 final String text = gemini ? extractGeminiText(response) : extractAnthropicText(response);
                 if (TextUtils.isEmpty(text)) {
+                    // Логуємо СТРУКТУРУ відповіді, а не її вміст: там може бути
+                    // розшифровка голосового чи переклад листування. Полів
+                    // достатньо, щоб зрозуміти, чому текст не витягнувся.
+                    FileLog.d("AiClient: порожня відповідь, " + describeShape(response));
                     fail(callback, LocaleController.getString(R.string.AiErrorEmptyResponse));
                 } else {
                     AndroidUtilities.runOnUIThread(() -> callback.onSuccess(text));
@@ -282,15 +286,6 @@ public class AiClient {
     private static String buildGeminiBody(String systemPrompt, String userText, File audioFile) throws Exception {
         final JSONArray parts = new JSONArray();
 
-        // Модель розпізнавання мовлення не приймає системну інструкцію:
-        //   detail=Developer instruction is not enabled for this model
-        // Для неї промт іде звичайною текстовою частиною поруч з аудіо —
-        // саме так це показано в прикладах Google для аудіо.
-        final boolean systemInstructionSupported = audioFile == null;
-
-        if (!systemInstructionSupported && !TextUtils.isEmpty(systemPrompt)) {
-            parts.put(new JSONObject().put("text", systemPrompt));
-        }
         if (!TextUtils.isEmpty(userText)) {
             parts.put(new JSONObject().put("text", userText));
         }
@@ -307,7 +302,7 @@ public class AiClient {
 
         final JSONObject root = new JSONObject();
         root.put("contents", new JSONArray().put(content));
-        if (systemInstructionSupported && !TextUtils.isEmpty(systemPrompt)) {
+        if (!TextUtils.isEmpty(systemPrompt)) {
             root.put("system_instruction",
                     new JSONObject().put("parts", new JSONObject().put("text", systemPrompt)));
         }
@@ -468,6 +463,58 @@ public class AiClient {
                 }
             }
         });
+    }
+
+    /**
+     * Опис форми відповіді для діагностики: які поля є і скільки чого.
+     * Значень не показує — лише назви ключів і кількості.
+     */
+    private static String describeShape(String response) {
+        try {
+            final JSONObject root = new JSONObject(response);
+            final StringBuilder sb = new StringBuilder();
+            sb.append("ключі=").append(root.keys().hasNext() ? join(root) : "немає");
+
+            final JSONArray candidates = root.optJSONArray("candidates");
+            sb.append(", candidates=").append(candidates == null ? "null" : candidates.length());
+            if (candidates != null && candidates.length() > 0) {
+                final JSONObject first = candidates.optJSONObject(0);
+                if (first != null) {
+                    sb.append(", finishReason=").append(first.optString("finishReason", "—"));
+                    sb.append(", ключіCandidate=").append(join(first));
+                    final JSONObject content = first.optJSONObject("content");
+                    if (content != null) {
+                        final JSONArray parts = content.optJSONArray("parts");
+                        sb.append(", parts=").append(parts == null ? "null" : parts.length());
+                        if (parts != null && parts.length() > 0 && parts.optJSONObject(0) != null) {
+                            sb.append(", ключіPart=").append(join(parts.optJSONObject(0)));
+                        }
+                    } else {
+                        sb.append(", content=null");
+                    }
+                }
+            }
+            final JSONObject usage = root.optJSONObject("usageMetadata");
+            if (usage != null) {
+                sb.append(", токениВхід=").append(usage.optInt("promptTokenCount", -1));
+                sb.append(", токениВихід=").append(usage.optInt("candidatesTokenCount", -1));
+            }
+            return sb.toString();
+        } catch (Throwable e) {
+            return "не JSON, довжина=" + (response == null ? 0 : response.length());
+        }
+    }
+
+    private static String join(JSONObject object) {
+        final StringBuilder sb = new StringBuilder();
+        final java.util.Iterator<String> it = object.keys();
+        while (it.hasNext()) {
+            if (sb.length() > 0) {
+                sb.append('|');
+            }
+            sb.append(it.next());
+        }
+        return sb.toString();
     }
 
     /** Обидва провайдери кладуть пояснення в {@code error.message}. */
