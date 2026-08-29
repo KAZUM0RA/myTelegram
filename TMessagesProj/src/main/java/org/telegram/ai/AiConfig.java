@@ -48,8 +48,8 @@ public class AiConfig {
 
     public static final String MODEL_GEMINI_FLASH_LITE = "gemini-3.5-flash-lite";
     public static final String MODEL_GEMINI_FLASH = "gemini-3.7-flash";
-    /** Старіше покоління — лишаємо як запасний варіант, якщо новіші недоступні ключу. */
-    public static final String MODEL_GEMINI_25_FLASH_LITE = "gemini-2.5-flash-lite";
+    /** Спеціалізована модель розпізнавання мовлення. */
+    public static final String MODEL_GEMINI_TRANSCRIBE = "gemini-3.5-transcribe";
 
     /**
      * Модель для голосових, зафіксована окремо від моделі для тексту.
@@ -60,14 +60,13 @@ public class AiConfig {
      * вибору моделі для тексту, а «Перевірити зв'язок» у налаштуваннях
      * показує, що насправді доступне конкретному ключу.
      */
-    public static final String MODEL_GEMINI_AUDIO = MODEL_GEMINI_FLASH_LITE;
+    public static final String MODEL_GEMINI_AUDIO = MODEL_GEMINI_TRANSCRIBE;
 
     public static String[][] availableModels(String provider) {
         if (PROVIDER_GEMINI.equals(provider)) {
             return new String[][]{
-                    {MODEL_GEMINI_FLASH_LITE,    "3.5 Flash-Lite — найдешевша, вміє аудіо"},
-                    {MODEL_GEMINI_FLASH,         "3.7 Flash — найновіша"},
-                    {MODEL_GEMINI_25_FLASH_LITE, "2.5 Flash-Lite — старіша, запасна"},
+                    {MODEL_GEMINI_FLASH_LITE, "3.5 Flash-Lite — найдешевша"},
+                    {MODEL_GEMINI_FLASH,      "3.7 Flash — найновіша"},
             };
         }
         return new String[][]{
@@ -116,10 +115,25 @@ public class AiConfig {
 
     // ── Модель ───────────────────────────────────────────────────────────
 
-    /** Модель зберігається окремо для кожного провайдера. */
+    /**
+     * Модель зберігається окремо для кожного провайдера.
+     *
+     * <p>Збережене значення перевіряється за поточним списком. Це не
+     * перестраховка: Google вивів gemini-2.5-flash-lite для нових ключів, і
+     * збережений колись вибір давав 404 доти, доки користувач не перевибрав
+     * модель вручну. Тепер застаріле значення просто ігнорується.
+     */
     public static String getModel() {
         final String provider = getProvider();
-        return prefs().getString(PREF_MODEL_PREFIX + provider, defaultModel(provider));
+        final String stored = prefs().getString(PREF_MODEL_PREFIX + provider, null);
+        if (stored != null) {
+            for (String[] row : availableModels(provider)) {
+                if (row[0].equals(stored)) {
+                    return stored;
+                }
+            }
+        }
+        return defaultModel(provider);
     }
 
     public static void setModel(String model) {

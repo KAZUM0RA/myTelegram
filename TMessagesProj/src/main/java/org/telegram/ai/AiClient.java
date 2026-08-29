@@ -185,6 +185,12 @@ public class AiClient {
                     AndroidUtilities.runOnUIThread(() -> callback.onSuccess(text));
                 }
             } else {
+                // Логуємо код і пояснення сервера: це відповідь API, не текст
+                // користувача, тож безпечно. Потрібно, бо в спливному
+                // повідомленні довгі пояснення обрізаються, а саме вони
+                // зазвичай і містять причину.
+                FileLog.d("AiClient: HTTP " + code + " model=" + model
+                        + " detail=" + extractErrorMessage(response));
                 fail(callback, describeHttpError(code, response));
             }
         } catch (java.net.UnknownHostException | java.net.SocketTimeoutException e) {
