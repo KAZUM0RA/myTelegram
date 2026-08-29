@@ -156,6 +156,18 @@ public class AiClient {
             connection.setReadTimeout(audioFile != null ? AUDIO_READ_TIMEOUT_MS : READ_TIMEOUT_MS);
             connection.setDoOutput(true);
             connection.setRequestProperty("content-type", "application/json");
+            // Вимикаємо перевикористання з'єднання.
+            //
+            // Замір показав: п'ять перекладів поспіль по 0,5–1,4 с, а шостий —
+            // 49 секунд, і теж успішний. Це не модель і не ліміт (тоді був би
+            // 429), це застаріле з'єднання в пулі HttpURLConnection: сервер
+            // його вже закрив, клієнт про це не знає, і запит чекає на повтори
+            // TCP.
+            //
+            // Ціна відмови від пулу — рукостискання TLS на кожен запит,
+            // близько 200–300 мс. Проти випадкових 49 секунд це вигідний обмін,
+            // тим паче що запити тут поодинокі й ініційовані користувачем.
+            connection.setRequestProperty("Connection", "close");
             if (gemini) {
                 // Ключ у заголовку, а не в рядку запиту: URL потрапляють у
                 // журнали проксі та системи, тіло запиту — ні.
@@ -172,10 +184,16 @@ public class AiClient {
                 out.write(body.getBytes(StandardCharsets.UTF_8));
             }
 
+            final long started = android.os.SystemClock.elapsedRealtime();
             final int code = connection.getResponseCode();
             final String response = readStream(code >= 400
                     ? connection.getErrorStream()
                     : connection.getInputStream());
+            final long tookMs = android.os.SystemClock.elapsedRealtime() - started;
+
+            // Замір часу: без нього неможливо відрізнити повільну модель від
+            // повільної мережі, а гадати про причину — марна трата збірок.
+            FileLog.d("AiClient: " + model + " відповів за " + tookMs + " мс, HTTP " + code);
 
             if (code == 200) {
                 final String text = gemini ? extractGeminiText(response) : extractAnthropicText(response);
