@@ -167,6 +167,36 @@ public class AiConfig {
     }
 
     /**
+     * Мова відправки, обрана для конкретного чату.
+     *
+     * <p>Запам'ятовується окремо для кожного діалогу: з різними людьми
+     * листування різними мовами, і одне глобальне значення змушувало б
+     * перевибирати щоразу при переході між чатами.
+     *
+     * <p>Порядок: вибір для цього чату → загальне налаштування → порожньо
+     * (тоді мову визначає {@code TranslateController} за співрозмовником).
+     */
+    public static String getOutgoingLanguage(long dialogId) {
+        final String perChat = outLangPrefs().getString(String.valueOf(dialogId), null);
+        return perChat != null ? perChat : getTargetLanguage();
+    }
+
+    public static void setOutgoingLanguage(long dialogId, String langCode) {
+        if (langCode == null || langCode.isEmpty()) {
+            // Порожній код означає «як у налаштуваннях»: прибираємо запис,
+            // щоб чат знову слухався загального значення.
+            outLangPrefs().edit().remove(String.valueOf(dialogId)).apply();
+        } else {
+            outLangPrefs().edit().putString(String.valueOf(dialogId), langCode).apply();
+        }
+    }
+
+    private static SharedPreferences outLangPrefs() {
+        return ApplicationLoader.applicationContext
+                .getSharedPreferences("ai_outgoing_lang", Context.MODE_PRIVATE);
+    }
+
+    /**
      * Мова, якою читає користувач: мова інтерфейсу застосунку.
      *
      * <p>Свідомо не залежить від налаштування вище: вхідні перекладаються

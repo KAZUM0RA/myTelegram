@@ -359,29 +359,10 @@ public class AiSettingsActivity extends BaseFragment {
      * з рештою інтерфейсу.
      */
     private void showLanguageDialog() {
-        if (getParentActivity() == null) {
-            return;
-        }
-        final ArrayList<TranslateController.Language> languages = TranslateController.getLanguages();
-
-        final CharSequence[] titles = new CharSequence[languages.size() + 1];
-        titles[0] = getString(R.string.AiTargetLangAuto);
-        for (int i = 0; i < languages.size(); i++) {
-            titles[i + 1] = languages.get(i).displayName;
-        }
-
-        final AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-        builder.setTitle(getString(R.string.AiTargetLangRow));
-        builder.setItems(titles, (dialog, which) -> {
-            if (which == 0) {
-                AiConfig.setTargetLanguage(AiConfig.TARGET_LANG_AUTO);
-            } else if (which - 1 < languages.size()) {
-                AiConfig.setTargetLanguage(languages.get(which - 1).code);
-            }
+        org.telegram.ai.AiLanguagePicker.show(this, getString(R.string.AiTargetLangRow), true, code -> {
+            AiConfig.setTargetLanguage(code);
             updateRows();
         });
-        builder.setNegativeButton(getString(R.string.Cancel), null);
-        builder.show();
     }
 
     @Override
