@@ -207,6 +207,40 @@ public class AiSettingsActivity extends BaseFragment {
         });
     }
 
+    /**
+     * Перевіряє щойно збережений ключ на сервері.
+     *
+     * <p>Саме собою збереження означає лише те, що ключ зашифрувався й ліг
+     * у сховище. Сказати після цього «ключ збережено» — формально правда,
+     * але звучить як підтвердження, що ключ дійсний, хоча ніхто його ще не
+     * питав. Тому одразу робимо той самий запит, що й «Перевірити зв'язок»,
+     * і показуємо, що відповів сервіс.
+     *
+     * <p>Ключ лишається збереженим у будь-якому разі: відмова може бути й
+     * через відсутню мережу, а змушувати вводити його наново — зайве.
+     */
+    private void verifySavedKey() {
+        BulletinFactory.of(this)
+                .createSimpleBulletin(R.raw.chats_infotip, getString(R.string.AiKeyChecking))
+                .show();
+
+        org.telegram.ai.AiClient.listModels(new org.telegram.ai.AiClient.Callback() {
+            @Override
+            public void onSuccess(String text) {
+                BulletinFactory.of(AiSettingsActivity.this)
+                        .createSimpleBulletin(R.raw.chats_infotip, getString(R.string.AiKeyWorks))
+                        .show();
+            }
+
+            @Override
+            public void onError(String message) {
+                // Пояснення сервера буває довгим — у діалозі його видно
+                // повністю й можна скопіювати, на відміну від смужки.
+                showTextDialog(getString(R.string.AiKeyRejected), message);
+            }
+        });
+    }
+
     /** Простий діалог із текстом, який можна виділити й скопіювати. */
     private void showTextDialog(String title, String text) {
         if (getParentActivity() == null) {
@@ -305,11 +339,13 @@ public class AiSettingsActivity extends BaseFragment {
             }
             final boolean saved = AiKeyStorage.saveKey(provider, entered);
             updateRows();
-            BulletinFactory.of(this)
-                    .createSimpleBulletin(
-                            saved ? R.raw.chats_infotip : R.raw.error,
-                            getString(saved ? R.string.AiKeySaved : R.string.AiKeySaveFailed))
-                    .show();
+            if (!saved) {
+                BulletinFactory.of(this)
+                        .createSimpleBulletin(R.raw.error, getString(R.string.AiKeySaveFailed))
+                        .show();
+                return;
+            }
+            verifySavedKey();
         });
         if (AiKeyStorage.hasKey(provider)) {
             builder.setNegativeButton(getString(R.string.Delete), (dialog, which) -> {

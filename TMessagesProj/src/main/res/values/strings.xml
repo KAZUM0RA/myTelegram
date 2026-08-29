@@ -37,8 +37,11 @@
     <string name="AiKeyInfo">The key is encrypted with Android Keystore and never leaves this device. Each provider has its own key.</string>
     <string name="AiSectionTranslate">Translation</string>
     <string name="AiModelRow">Model</string>
-    <string name="AiCostInfo">Gemini Flash-Lite: about $0.03 per 1000 message translations. Voice messages always use Gemini Flash — Anthropic models do not accept audio.</string>
+    <string name="AiCostInfo">Gemini Flash-Lite: about $0.03 per 1000 message translations. Voice messages use the same Flash-Lite — Anthropic models do not accept audio.</string>
     <string name="AiKeySaved">Key saved</string>
+    <string name="AiKeyChecking">Key saved. Checking it with the service…</string>
+    <string name="AiKeyWorks">Key saved and working</string>
+    <string name="AiKeyRejected">Key saved, but the service did not accept it</string>
     <string name="AiKeyRemoved">Key removed</string>
     <string name="AiKeySaveFailed">Could not save the key</string>
     <string name="AiKeystoreUnavailable">This device has no secure key storage (Android 6+ required). AI features are unavailable.</string>

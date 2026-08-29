@@ -37,8 +37,11 @@
     <string name="AiKeyInfo">Ключ шифрується через Android Keystore і не залишає цей пристрій. У кожного провайдера свій ключ.</string>
     <string name="AiSectionTranslate">Переклад</string>
     <string name="AiModelRow">Модель</string>
-    <string name="AiCostInfo">Gemini Flash-Lite: близько $0.03 за тисячу перекладів повідомлень. Голосові завжди йдуть через Gemini Flash — моделі Anthropic аудіо не приймають.</string>
+    <string name="AiCostInfo">Gemini Flash-Lite: близько $0.03 за тисячу перекладів повідомлень. Голосові йдуть через ту саму Flash-Lite — моделі Anthropic аудіо не приймають.</string>
     <string name="AiKeySaved">Ключ збережено</string>
+    <string name="AiKeyChecking">Ключ збережено. Перевіряю його на сервері…</string>
+    <string name="AiKeyWorks">Ключ збережено й працює</string>
+    <string name="AiKeyRejected">Ключ збережено, але сервіс його не прийняв</string>
     <string name="AiKeyRemoved">Ключ видалено</string>
     <string name="AiKeySaveFailed">Не вдалося зберегти ключ</string>
     <string name="AiKeystoreUnavailable">Пристрій не має захищеного сховища ключів (потрібен Android 6+). AI-функції недоступні.</string>
