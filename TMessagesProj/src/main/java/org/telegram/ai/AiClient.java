@@ -281,6 +281,16 @@ public class AiClient {
 
     private static String buildGeminiBody(String systemPrompt, String userText, File audioFile) throws Exception {
         final JSONArray parts = new JSONArray();
+
+        // Модель розпізнавання мовлення не приймає системну інструкцію:
+        //   detail=Developer instruction is not enabled for this model
+        // Для неї промт іде звичайною текстовою частиною поруч з аудіо —
+        // саме так це показано в прикладах Google для аудіо.
+        final boolean systemInstructionSupported = audioFile == null;
+
+        if (!systemInstructionSupported && !TextUtils.isEmpty(systemPrompt)) {
+            parts.put(new JSONObject().put("text", systemPrompt));
+        }
         if (!TextUtils.isEmpty(userText)) {
             parts.put(new JSONObject().put("text", userText));
         }
@@ -297,7 +307,7 @@ public class AiClient {
 
         final JSONObject root = new JSONObject();
         root.put("contents", new JSONArray().put(content));
-        if (!TextUtils.isEmpty(systemPrompt)) {
+        if (systemInstructionSupported && !TextUtils.isEmpty(systemPrompt)) {
             root.put("system_instruction",
                     new JSONObject().put("parts", new JSONObject().put("text", systemPrompt)));
         }
