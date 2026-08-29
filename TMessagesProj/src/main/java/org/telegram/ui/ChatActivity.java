@@ -4004,6 +4004,20 @@ public class ChatActivity extends BaseFragment implements
                                     ? R.string.AiAutoTranslateEnabled
                                     : R.string.AiAutoTranslateDisabled)
                     ).show();
+                    // Перемальовуємо видимі повідомлення: при вимкненні вони
+                    // мають повернутись до оригіналу, при вмиканні — показати
+                    // вже наявні переклади з кешу, не чекаючи нових запитів.
+                    if (chatListView != null) {
+                        for (int i = 0; i < chatListView.getChildCount(); ++i) {
+                            final View child = chatListView.getChildAt(i);
+                            if (child instanceof ChatMessageCell) {
+                                final MessageObject cellMessage = ((ChatMessageCell) child).getMessageObject();
+                                if (cellMessage != null && cellMessage.updateTranslation(true)) {
+                                    ((ChatMessageCell) child).forceResetMessageObject();
+                                }
+                            }
+                        }
+                    }
                     checkTranslation(true);
                 } else if (id == ai_summary) {
                     org.telegram.ai.AiAssistUi.summarize(ChatActivity.this, messages);

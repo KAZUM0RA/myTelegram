@@ -3727,6 +3727,30 @@ public class MessageObject {
                 generateCaption();
             }
             return replyUpdated || true;
+        } else if (
+            // ── Форк MyTelegram ──────────────────────────────────────────
+            // Наш автопереклад через AI. Умова апстріму вище вимагає
+            // isTranslatingDialog() — власного перемикача Telegram, який
+            // доступний лише з Premium. Через це наш переклад зберігався в
+            // messageOwner.translatedText, але на екран не потрапляв ніколи:
+            // запити йшли, гроші витрачались, результату не було видно.
+            //
+            // Окрема гілка, а не правка умови апстріму: так поведінка
+            // штатного перекладу лишається незмінною, і оновлення легше
+            // зливати.
+            messageOwner != null &&
+            translatedText != null &&
+            TranslateController.isTranslatable(this) &&
+            org.telegram.ai.AiAutoTranslate.isEnabled(getDialogId())
+        ) {
+            if (translated && !summarized) {
+                return replyUpdated || false;
+            }
+            translated = true;
+            summarized = false;
+            applyNewText(translatedText.text);
+            generateCaption();
+            return replyUpdated || true;
         } else if (messageOwner != null && (force || translated || summarized)) {
             translated = false;
             summarized = false;
