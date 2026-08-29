@@ -45944,8 +45944,16 @@ public class ChatActivity extends BaseFragment implements
                 // текст уже твоєю мовою. Але запропонована відповідь потрібна
                 // й до повідомлень рідною мовою — той самий недогляд, що й із
                 // голосовими нижче.
+                //
+                // Питаємо саме «чи є тут текст», а не getMessageTextToTranslate():
+                // той означає «цей текст ще треба перекласти» і повертає null,
+                // щойно повідомлення перекладене (перший рядок методу —
+                // `if (translated) return null`). Через нього пункт зникав після
+                // автоперекладу. Обробник і так бере messageOwner.message —
+                // вихідний текст, на який переклад не впливає.
                 if (selectedObject != null && !selectedObject.isEphemeral()
-                        && !TextUtils.isEmpty(selectedObject.getMessageTextToTranslate(null, null))
+                        && selectedObject.messageOwner != null
+                        && !TextUtils.isEmpty(selectedObject.messageOwner.message)
                         && org.telegram.ai.AiConfig.isReady()) {
                     items.add(LocaleController.getString(R.string.AiReply));
                     options.add(OPTION_AI_REPLY);
@@ -46322,8 +46330,16 @@ public class ChatActivity extends BaseFragment implements
                 // текст уже твоєю мовою. Але запропонована відповідь потрібна
                 // й до повідомлень рідною мовою — той самий недогляд, що й із
                 // голосовими нижче.
+                //
+                // Питаємо саме «чи є тут текст», а не getMessageTextToTranslate():
+                // той означає «цей текст ще треба перекласти» і повертає null,
+                // щойно повідомлення перекладене (перший рядок методу —
+                // `if (translated) return null`). Через нього пункт зникав після
+                // автоперекладу. Обробник і так бере messageOwner.message —
+                // вихідний текст, на який переклад не впливає.
                 if (selectedObject != null && !selectedObject.isEphemeral()
-                        && !TextUtils.isEmpty(selectedObject.getMessageTextToTranslate(null, null))
+                        && selectedObject.messageOwner != null
+                        && !TextUtils.isEmpty(selectedObject.messageOwner.message)
                         && org.telegram.ai.AiConfig.isReady()) {
                     items.add(LocaleController.getString(R.string.AiReply));
                     options.add(OPTION_AI_REPLY);
