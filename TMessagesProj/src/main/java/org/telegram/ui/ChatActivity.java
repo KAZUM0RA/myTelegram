@@ -1236,6 +1236,8 @@ public class ChatActivity extends BaseFragment implements
     public final static int OPTION_AI_TRANSLATE = 900;
     /** Форк: чернетка відповіді на вибране повідомлення. */
     public final static int OPTION_AI_REPLY = 901;
+    /** Форк: розпізнавання голосового. */
+    public final static int OPTION_AI_VOICE = 902;
     public final static int OPTION_TRANSCRIBE = 30;
     public final static int OPTION_HIDE_SPONSORED_MESSAGE = 31;
     public final static int OPTION_VIEW_IN_TOPIC = 32;
@@ -33429,6 +33431,15 @@ public class ChatActivity extends BaseFragment implements
                 presentFragment(fragment);
                 break;
             }
+            // Форк: розпізнавання голосового через Gemini.
+            case OPTION_AI_VOICE: {
+                if (selectedObject != null) {
+                    final java.io.File voiceFile = FileLoader.getInstance(currentAccount)
+                            .getPathToMessage(selectedObject.messageOwner);
+                    org.telegram.ai.AiAssistUi.readVoice(this, voiceFile);
+                }
+                break;
+            }
             // Форк: чернетка відповіді на вибране повідомлення.
             case OPTION_AI_REPLY: {
                 if (selectedObject != null) {
@@ -45914,6 +45925,11 @@ public class ChatActivity extends BaseFragment implements
                         items.add(LocaleController.getString(R.string.AiReply));
                         options.add(OPTION_AI_REPLY);
                         icons.add(R.drawable.menu_reply);
+                        if (selectedObject != null && selectedObject.isVoice() && org.telegram.ai.AiConfig.supportsAudio()) {
+                            items.add(LocaleController.getString(R.string.AiVoiceRead));
+                            options.add(OPTION_AI_VOICE);
+                            icons.add(R.drawable.msg_text_outlined);
+                        }
                     }
                 }
                 if (message.canEditMessage(currentChat) && message.type != MessageObject.TYPE_POLL || chatMode == MODE_WELCOME_MESSAGES) {
@@ -46272,6 +46288,11 @@ public class ChatActivity extends BaseFragment implements
                         items.add(LocaleController.getString(R.string.AiReply));
                         options.add(OPTION_AI_REPLY);
                         icons.add(R.drawable.menu_reply);
+                        if (selectedObject != null && selectedObject.isVoice() && org.telegram.ai.AiConfig.supportsAudio()) {
+                            items.add(LocaleController.getString(R.string.AiVoiceRead));
+                            options.add(OPTION_AI_VOICE);
+                            icons.add(R.drawable.msg_text_outlined);
+                        }
                     }
                 }
                 if (allowEdit || chatMode == MODE_WELCOME_MESSAGES) {

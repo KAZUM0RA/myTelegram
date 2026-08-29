@@ -21,7 +21,7 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.GCMParameterSpec;
 
 /**
- * Зберігання ключа Anthropic API.
+ * Зберігання ключів AI-провайдерів. У кожного провайдера свій ключ.
  *
  * <p>Ключ шифрується AES-256/GCM, і — головне — <b>сам ключ шифрування ніколи
  * не залишає Android Keystore</b>. На пристроях з апаратним модулем безпеки
@@ -45,7 +45,12 @@ public class AiKeyStorage {
     private static final String TRANSFORMATION = "AES/GCM/NoPadding";
 
     private static final String PREFS = "ai_config";
-    private static final String PREF_ENCRYPTED = "api_key_enc";
+    /** Ключ у кожного провайдера свій, тож зберігаємо окремо. */
+    private static final String PREF_ENCRYPTED_PREFIX = "api_key_enc_";
+
+    private static String prefKey(String provider) {
+        return PREF_ENCRYPTED_PREFIX + provider;
+    }
 
     /** Довжина тега автентичності GCM у бітах — стандартне значення. */
     private static final int GCM_TAG_BITS = 128;
@@ -66,8 +71,8 @@ public class AiKeyStorage {
     }
 
     /** Чи збережений ключ. Сам ключ при цьому не розшифровується. */
-    public static boolean hasKey() {
-        return isAvailable() && !prefs().getString(PREF_ENCRYPTED, "").isEmpty();
+    public static boolean hasKey(String provider) {
+        return isAvailable() && !prefs().getString(prefKey(provider), "").isEmpty();
     }
 
     /**
@@ -75,12 +80,12 @@ public class AiKeyStorage {
      *
      * @return true, якщо операція вдалася
      */
-    public static boolean saveKey(String apiKey) {
+    public static boolean saveKey(String provider, String apiKey) {
         if (!isAvailable()) {
             return false;
         }
         if (apiKey == null || apiKey.trim().isEmpty()) {
-            clear();
+            clear(provider);
             return true;
         }
         try {
@@ -97,7 +102,7 @@ public class AiKeyStorage {
             System.arraycopy(encrypted, 0, combined, iv.length, encrypted.length);
 
             prefs().edit()
-                    .putString(PREF_ENCRYPTED, Base64.encodeToString(combined, Base64.NO_WRAP))
+                    .putString(prefKey(provider), Base64.encodeToString(combined, Base64.NO_WRAP))
                     .apply();
             return true;
         } catch (Throwable e) {
@@ -114,11 +119,11 @@ public class AiKeyStorage {
      * <p>Викликати лише в момент запиту до API. Не кешувати в полях і не
      * передавати далі, ніж потрібно — що менше місць у пам'яті, то краще.
      */
-    public static String getKey() {
+    public static String getKey(String provider) {
         if (!isAvailable()) {
             return null;
         }
-        final String stored = prefs().getString(PREF_ENCRYPTED, "");
+        final String stored = prefs().getString(prefKey(provider), "");
         if (stored.isEmpty()) {
             return null;
         }
@@ -143,22 +148,22 @@ public class AiKeyStorage {
             // пристрій тощо. Розшифрувати вже неможливо, тож прибираємо
             // непотріб і просимо ввести ключ заново.
             FileLog.e("AiKeyStorage: не вдалося розшифрувати ключ, стираю збережене");
-            clear();
+            clear(provider);
             return null;
         }
     }
 
     /** Стирає збережений ключ. Сам ключ Keystore лишається — він безпечний і порожній. */
-    public static void clear() {
-        prefs().edit().remove(PREF_ENCRYPTED).apply();
+    public static void clear(String provider) {
+        prefs().edit().remove(prefKey(provider)).apply();
     }
 
     /**
      * Маска для показу в інтерфейсі: {@code sk-ant-...a1b2}.
      * Повний ключ на екран не виводимо ніде й ніколи.
      */
-    public static String getMaskedKey() {
-        final String key = getKey();
+    public static String getMaskedKey(String provider) {
+        final String key = getKey(provider);
         if (key == null || key.length() < 8) {
             return null;
         }

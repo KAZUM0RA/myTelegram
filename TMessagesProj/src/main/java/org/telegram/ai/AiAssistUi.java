@@ -178,6 +178,40 @@ public class AiAssistUi {
                 result -> AiTranslateUi.showPreview(fragment, result, onAccepted));
     }
 
+    // ── Голосові ─────────────────────────────────────────────────────────
+
+    /**
+     * Розпізнає голосове й показує текст.
+     *
+     * <p>Якщо мова голосового відрізняється від мови користувача, промт
+     * просить додати ще й переклад — тобто одним запитом отримуємо і
+     * розшифровку, і зрозумілий текст. Робити це двома запитами було б
+     * удвічі дорожче й повільніше.
+     */
+    public static void readVoice(BaseFragment fragment, java.io.File audioFile) {
+        if (!ready(fragment)) {
+            return;
+        }
+        final AlertDialog progress =
+                new AlertDialog(fragment.getParentActivity(), AlertDialog.ALERT_TYPE_SPINNER);
+        progress.setCanCancel(true);
+        progress.show();
+
+        AiClient.transcribe(audioFile, myLanguage(), new AiClient.Callback() {
+            @Override
+            public void onSuccess(String text) {
+                progress.dismiss();
+                showReadOnly(fragment, getString(R.string.AiVoiceTitle), text);
+            }
+
+            @Override
+            public void onError(String message) {
+                progress.dismiss();
+                BulletinFactory.of(fragment).createErrorBulletin(message).show();
+            }
+        });
+    }
+
     // ── Спільне ──────────────────────────────────────────────────────────
 
     private static boolean ready(BaseFragment fragment) {

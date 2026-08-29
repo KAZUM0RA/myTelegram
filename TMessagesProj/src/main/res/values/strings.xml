@@ -2,6 +2,15 @@
 <resources>
     <string name="AppName">MyTelegram</string>
     <string name="AppNameBeta">MyTelegram Beta</string>
+    <string name="AiSectionProvider">Provider</string>
+    <string name="AiProviderRow">Provider</string>
+    <string name="AiSectionLinks">Keys and billing</string>
+    <string name="AiLinksInfo">Free Gemini tier uses your data to improve Google products. For a messenger, enable billing and use the paid tier.</string>
+    <string name="AiErrorNoAudioSupport">Voice messages need Google Gemini. Anthropic models do not accept audio.</string>
+    <string name="AiErrorAudioMissing">Voice file is not downloaded yet.</string>
+    <string name="AiErrorAudioTooBig">Voice message is too long.</string>
+    <string name="AiVoiceRead">Read out with AI</string>
+    <string name="AiVoiceTitle">Voice message</string>
     <string name="AiSummary">Summarize chat with AI</string>
     <string name="AiSummaryTitle">Summary</string>
     <string name="AiReply">Reply with AI</string>
@@ -22,10 +31,10 @@
     <string name="AiKeyRow">API key</string>
     <string name="AiKeyNotSet">not set</string>
     <string name="AiKeyHint">sk-ant-api03-…</string>
-    <string name="AiKeyInfo">Get a key at console.anthropic.com — you need to top up your balance there, there is no free tier. The key is encrypted with Android Keystore and never leaves this device.</string>
+    <string name="AiKeyInfo">The key is encrypted with Android Keystore and never leaves this device. Each provider has its own key.</string>
     <string name="AiSectionTranslate">Translation</string>
     <string name="AiModelRow">Model</string>
-    <string name="AiCostInfo">Haiku 4.5 costs about $0.0004 per message translation — roughly $0.40 per thousand.</string>
+    <string name="AiCostInfo">Gemini Flash-Lite: about $0.03 per 1000 message translations. Voice messages always use Gemini Flash — Anthropic models do not accept audio.</string>
     <string name="AiKeySaved">Key saved</string>
     <string name="AiKeyRemoved">Key removed</string>
     <string name="AiKeySaveFailed">Could not save the key</string>

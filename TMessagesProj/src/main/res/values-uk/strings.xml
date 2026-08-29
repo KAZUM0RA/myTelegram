@@ -2,6 +2,15 @@
 <resources>
     <string name="AppName">MyTelegram</string>
     <string name="AppNameBeta">MyTelegram Beta</string>
+    <string name="AiSectionProvider">Провайдер</string>
+    <string name="AiProviderRow">Провайдер</string>
+    <string name="AiSectionLinks">Ключі й оплата</string>
+    <string name="AiLinksInfo">Безкоштовний рівень Gemini використовує твої дані для покращення продуктів Google. Для месенджера увімкни оплату й користуйся платним рівнем.</string>
+    <string name="AiErrorNoAudioSupport">Для голосових потрібен Google Gemini. Моделі Anthropic аудіо не приймають.</string>
+    <string name="AiErrorAudioMissing">Голосове ще не завантажене.</string>
+    <string name="AiErrorAudioTooBig">Голосове задовге.</string>
+    <string name="AiVoiceRead">Прочитати через AI</string>
+    <string name="AiVoiceTitle">Голосове повідомлення</string>
     <string name="AiSummary">Підсумок переписки (AI)</string>
     <string name="AiSummaryTitle">Підсумок</string>
     <string name="AiReply">Відповісти через AI</string>
@@ -22,10 +31,10 @@
     <string name="AiKeyRow">Ключ API</string>
     <string name="AiKeyNotSet">не задано</string>
     <string name="AiKeyHint">sk-ant-api03-…</string>
-    <string name="AiKeyInfo">Ключ отримується на console.anthropic.com — там же треба поповнити баланс, безкоштовного рівня немає. Ключ шифрується через Android Keystore і не залишає цей пристрій.</string>
+    <string name="AiKeyInfo">Ключ шифрується через Android Keystore і не залишає цей пристрій. У кожного провайдера свій ключ.</string>
     <string name="AiSectionTranslate">Переклад</string>
     <string name="AiModelRow">Модель</string>
-    <string name="AiCostInfo">Haiku 4.5 коштує близько $0.0004 за переклад одного повідомлення — приблизно $0.40 за тисячу.</string>
+    <string name="AiCostInfo">Gemini Flash-Lite: близько $0.03 за тисячу перекладів повідомлень. Голосові завжди йдуть через Gemini Flash — моделі Anthropic аудіо не приймають.</string>
     <string name="AiKeySaved">Ключ збережено</string>
     <string name="AiKeyRemoved">Ключ видалено</string>
     <string name="AiKeySaveFailed">Не вдалося зберегти ключ</string>
