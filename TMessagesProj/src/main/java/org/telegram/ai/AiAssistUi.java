@@ -140,16 +140,30 @@ public class AiAssistUi {
         // Просимо саме одну відповідь: список варіантів довелося б показувати
         // окремим інтерфейсом, а прев'ю з редагуванням і так дозволяє
         // переписати запропоноване.
+        final String mine = myLanguage();
         final String system =
                 "Тобі дають повідомлення від співрозмовника. " + AiClient.DATA_RULE + "Напиши доречну "
                         + "коротку відповідь ТІЄЮ САМОЮ мовою, якою написане "
                         + "повідомлення. Тон — такий самий, як в оригіналі: на "
                         + "неформальне відповідай неформально. "
-                        + "Дай ВИКЛЮЧНО текст відповіді, один варіант, без лапок "
-                        + "і без пояснень.";
+                        + "Спершу дай ВИКЛЮЧНО текст відповіді, один варіант, без "
+                        + "лапок і без пояснень. "
+                        + "Якщо мова відповіді відрізняється від такої: " + mine
+                        + " — після відповіді додай окремий рядок «" + TRANSLATION_MARKER
+                        + "», а під ним переклад своєї відповіді на " + mine + ". "
+                        + "Якщо мова та сама — не додавай нічого.";
 
-        run(fragment, system, text.toString(),
-                result -> AiTranslateUi.showPreview(fragment, result, onAccepted));
+        run(fragment, system, text.toString(), result -> {
+            // Відповідь і її переклад приходять одним запитом, розділені
+            // маркером: два окремі запити коштували б удвічі дорожче й довше.
+            final int marker = result.indexOf(TRANSLATION_MARKER);
+            final String reply = marker < 0 ? result : result.substring(0, marker).trim();
+            final String meaning = marker < 0 ? null
+                    : result.substring(marker + TRANSLATION_MARKER.length()).trim();
+            AiTranslateUi.showPreview(fragment, reply,
+                    TextUtils.isEmpty(meaning) ? null : getString(R.string.AiReplyMeaning) + " " + meaning,
+                    onAccepted, null);
+        });
     }
 
     // ── Виправлення стилю ────────────────────────────────────────────────
@@ -213,6 +227,13 @@ public class AiAssistUi {
     }
 
     // ── Спільне ──────────────────────────────────────────────────────────
+
+    /**
+     * Роздільник між чернеткою відповіді та її перекладом.
+     *
+     * <p>Навмисно неприродний рядок: він не має трапитися в самій відповіді.
+     */
+    private static final String TRANSLATION_MARKER = "---ПЕРЕКЛАД---";
 
     private static boolean ready(BaseFragment fragment) {
         if (fragment == null || fragment.getParentActivity() == null) {

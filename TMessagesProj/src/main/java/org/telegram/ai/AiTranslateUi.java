@@ -313,6 +313,18 @@ public class AiTranslateUi {
     static void showPreview(BaseFragment fragment, String translated,
                             Utilities.Callback<String> onAccepted,
                             Runnable onChangeLanguage) {
+        showPreview(fragment, translated, null, onAccepted, onChangeLanguage);
+    }
+
+    /**
+     * @param hint якщо не null — під полем показується нередагований текст.
+     *             Потрібен для чернетки відповіді іноземною мовою: у поле йде
+     *             сама відповідь, а тут видно, що вона означає. Інакше
+     *             довелося б надсилати наосліп текст, якого не розумієш.
+     */
+    static void showPreview(BaseFragment fragment, String translated, String hint,
+                            Utilities.Callback<String> onAccepted,
+                            Runnable onChangeLanguage) {
         if (fragment.getParentActivity() == null) {
             return;
         }
@@ -329,8 +341,23 @@ public class AiTranslateUi {
         editText.setText(translated);
         editText.setSelection(editText.getText().length());
 
+        final LinearLayout column = new LinearLayout(context);
+        column.setOrientation(LinearLayout.VERTICAL);
+        column.addView(editText, LayoutHelper.createLinear(
+                LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+
+        if (!TextUtils.isEmpty(hint)) {
+            final TextView hintView = new TextView(context);
+            hintView.setTextSize(android.util.TypedValue.COMPLEX_UNIT_DIP, 14);
+            hintView.setTextColor(Theme.getColor(Theme.key_dialogTextGray2));
+            hintView.setText(hint);
+            hintView.setTextIsSelectable(true);
+            column.addView(hintView, LayoutHelper.createLinear(
+                    LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 12, 0, 0));
+        }
+
         final FrameLayout container = new FrameLayout(context);
-        container.addView(editText, LayoutHelper.createFrame(
+        container.addView(column, LayoutHelper.createFrame(
                 LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT,
                 Gravity.LEFT | Gravity.TOP, 24, 6, 24, 0));
 

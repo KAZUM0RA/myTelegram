@@ -17,6 +17,7 @@
     <string name="AiSummary">Summarize chat with AI</string>
     <string name="AiSummaryTitle">Summary</string>
     <string name="AiReply">Reply with AI</string>
+    <string name="AiReplyMeaning">Means:</string>
     <string name="AiAutoTranslateEnabled">AI auto-translate is on for this chat</string>
     <string name="AiAutoTranslateDisabled">AI auto-translate is off</string>
     <string name="AiAutoTranslate">AI auto-translate</string>

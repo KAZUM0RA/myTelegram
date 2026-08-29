@@ -45936,10 +45936,20 @@ public class ChatActivity extends BaseFragment implements
                         items.add(LocaleController.getString(R.string.AiTranslateMenuItem));
                         options.add(OPTION_AI_TRANSLATE);
                         icons.add(R.drawable.outline_ai_translate2);
-                        items.add(LocaleController.getString(R.string.AiReply));
-                        options.add(OPTION_AI_REPLY);
-                        icons.add(R.drawable.menu_reply);
                     }
+                }
+                // Форк: чернетка відповіді — теж ОКРЕМА умова.
+                // Всередині блоку «Перекласти» цей пункт з'являвся лише для
+                // іншомовних повідомлень: Telegram ховає весь той блок, коли
+                // текст уже твоєю мовою. Але запропонована відповідь потрібна
+                // й до повідомлень рідною мовою — той самий недогляд, що й із
+                // голосовими нижче.
+                if (selectedObject != null && !selectedObject.isEphemeral()
+                        && !TextUtils.isEmpty(selectedObject.getMessageTextToTranslate(null, null))
+                        && org.telegram.ai.AiConfig.isReady()) {
+                    items.add(LocaleController.getString(R.string.AiReply));
+                    options.add(OPTION_AI_REPLY);
+                    icons.add(R.drawable.menu_reply);
                 }
                 // Форк: розпізнавання голосового — ОКРЕМА умова.
                 // Всередині блоку «Перекласти» цей пункт не працював: та умова
@@ -46304,10 +46314,20 @@ public class ChatActivity extends BaseFragment implements
                         items.add(LocaleController.getString(R.string.AiTranslateMenuItem));
                         options.add(OPTION_AI_TRANSLATE);
                         icons.add(R.drawable.outline_ai_translate2);
-                        items.add(LocaleController.getString(R.string.AiReply));
-                        options.add(OPTION_AI_REPLY);
-                        icons.add(R.drawable.menu_reply);
                     }
+                }
+                // Форк: чернетка відповіді — теж ОКРЕМА умова.
+                // Всередині блоку «Перекласти» цей пункт з'являвся лише для
+                // іншомовних повідомлень: Telegram ховає весь той блок, коли
+                // текст уже твоєю мовою. Але запропонована відповідь потрібна
+                // й до повідомлень рідною мовою — той самий недогляд, що й із
+                // голосовими нижче.
+                if (selectedObject != null && !selectedObject.isEphemeral()
+                        && !TextUtils.isEmpty(selectedObject.getMessageTextToTranslate(null, null))
+                        && org.telegram.ai.AiConfig.isReady()) {
+                    items.add(LocaleController.getString(R.string.AiReply));
+                    options.add(OPTION_AI_REPLY);
+                    icons.add(R.drawable.menu_reply);
                 }
                 // Форк: розпізнавання голосового — ОКРЕМА умова.
                 // Всередині блоку «Перекласти» цей пункт не працював: та умова
