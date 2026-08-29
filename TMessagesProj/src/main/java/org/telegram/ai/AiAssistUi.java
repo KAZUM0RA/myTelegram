@@ -70,7 +70,7 @@ public class AiAssistUi {
         }
 
         final String system =
-                "Ти читаєш переписку і робиш стислий підсумок. "
+                "Ти читаєш переписку і робиш стислий підсумок. " + AiClient.DATA_RULE
                         + "Мова підсумку: " + myLanguage() + ". "
                         + "Опиши: про що йшлося, які рішення ухвалені, що лишилось "
                         + "невирішеним або потребує відповіді. "
@@ -141,7 +141,7 @@ public class AiAssistUi {
         // окремим інтерфейсом, а прев'ю з редагуванням і так дозволяє
         // переписати запропоноване.
         final String system =
-                "Тобі дають повідомлення від співрозмовника. Напиши доречну "
+                "Тобі дають повідомлення від співрозмовника. " + AiClient.DATA_RULE + "Напиши доречну "
                         + "коротку відповідь ТІЄЮ САМОЮ мовою, якою написане "
                         + "повідомлення. Тон — такий самий, як в оригіналі: на "
                         + "неформальне відповідай неформально. "
@@ -167,7 +167,7 @@ public class AiAssistUi {
         }
 
         final String system =
-                "Виправ у тексті користувача граматику, орфографію й пунктуацію. "
+                "Виправ у наданому тексті граматику, орфографію й пунктуацію. " + AiClient.DATA_RULE
                         + "Мову НЕ міняй — відповідай тією самою, якою написаний "
                         + "оригінал. Зміст, тон і рівень формальності збережи: "
                         + "не роби розмовне діловим. Якщо помилок немає — поверни "
@@ -235,7 +235,7 @@ public class AiAssistUi {
         progress.setCanCancel(true);
         progress.show();
 
-        AiClient.request(system, userText, new AiClient.Callback() {
+        AiClient.request(system, AiClient.asData(userText), new AiClient.Callback() {
             @Override
             public void onSuccess(String text) {
                 progress.dismiss();

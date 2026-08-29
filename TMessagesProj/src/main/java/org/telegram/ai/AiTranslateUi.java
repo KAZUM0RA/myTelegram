@@ -75,7 +75,17 @@ public class AiTranslateUi {
             return;
         }
 
-        doTranslate(fragment, dialogId, text.toString(), resolveTargetLanguage(dialogId), onAccepted);
+        final String target = resolveTargetLanguage(dialogId);
+        if (TextUtils.isEmpty(target)) {
+            // Мову ні з чого вивести. Раніше в такому разі йшов запит із
+            // вказівкою «переклади на мову попереднього повідомлення
+            // співрозмовника» — але того повідомлення модель не отримує, тож
+            // виконати це вона не могла в принципі. Краще спитати: вибір
+            // збережеться для цього чату й більше не турбуватиме.
+            pickLanguageAndRetranslate(fragment, dialogId, text.toString(), onAccepted, false);
+            return;
+        }
+        doTranslate(fragment, dialogId, text.toString(), target, onAccepted);
     }
 
     /**
@@ -118,9 +128,27 @@ public class AiTranslateUi {
     private static void pickLanguageAndRetranslate(BaseFragment fragment, long dialogId,
                                                    String originalText,
                                                    Utilities.Callback<String> onAccepted) {
-        AiLanguagePicker.show(fragment, getString(R.string.AiTargetLangRow), true, code -> {
+        pickLanguageAndRetranslate(fragment, dialogId, originalText, onAccepted, true);
+    }
+
+    /**
+     * @param withAuto чи пропонувати варіант «як у налаштуваннях». Коли ми
+     *                 питаємо саме через те, що мову ні з чого вивести, цей
+     *                 варіант вести нікуди: він повернув би нас до того самого
+     *                 невизначеного стану.
+     */
+    private static void pickLanguageAndRetranslate(BaseFragment fragment, long dialogId,
+                                                   String originalText,
+                                                   Utilities.Callback<String> onAccepted,
+                                                   boolean withAuto) {
+        AiLanguagePicker.show(fragment, getString(R.string.AiTargetLangRow), withAuto, code -> {
             AiConfig.setOutgoingLanguage(dialogId, code);
-            doTranslate(fragment, dialogId, originalText, resolveTargetLanguage(dialogId), onAccepted);
+            final String target = resolveTargetLanguage(dialogId);
+            if (TextUtils.isEmpty(target)) {
+                pickLanguageAndRetranslate(fragment, dialogId, originalText, onAccepted, false);
+                return;
+            }
+            doTranslate(fragment, dialogId, originalText, target, onAccepted);
         });
     }
 
@@ -144,7 +172,13 @@ public class AiTranslateUi {
             final String detected = MessagesController.getInstance(UserConfig.selectedAccount)
                     .getTranslateController()
                     .getDialogDetectedLanguage(dialogId);
-            if (!TextUtils.isEmpty(detected) && !"und".equals(detected)) {
+            // Мова чату годиться як здогад лише тоді, коли вона НЕ твоя власна.
+            // Інакше виходить «переклади з української на українську»: роботи
+            // немає, і модель заповнює порожнечу чим завгодно — одного разу
+            // просто відповіла на «Привіт як ти» замість перекладу.
+            final boolean sameAsMine = !TextUtils.isEmpty(detected)
+                    && detected.equalsIgnoreCase(AiConfig.getReadingLanguageCode());
+            if (!TextUtils.isEmpty(detected) && !"und".equals(detected) && !sameAsMine) {
                 final String name = TranslateAlert2.languageName(detected);
                 if (!TextUtils.isEmpty(name)) {
                     return name;
