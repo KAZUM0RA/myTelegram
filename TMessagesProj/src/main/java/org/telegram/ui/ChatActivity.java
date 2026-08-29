@@ -446,6 +446,8 @@ public class ChatActivity extends BaseFragment implements
     protected ActionBarMenuItem searchItem;
     protected ActionBarMenuItem topicCreateItem;
     private ActionBarMenuItem.Item translateItem;
+    /** Форк: пункт автоперекладу через Claude. */
+    private ActionBarMenuItem.Item aiAutoTranslateItem;
     private ActionBarMenuItem searchIconItem;
     private ActionBarMenu.LazyItem audioCallIconItem;
     private boolean searchItemVisible;
@@ -1678,6 +1680,8 @@ public class ChatActivity extends BaseFragment implements
     private final static int open_forum = 61;
 
     private final static int translate = 62;
+    /** Форк: перемикач автоперекладу через Claude. 900 — далеко від нумерації апстріму. */
+    private final static int ai_autotranslate = 900;
     private final static int scheduled = 63;
     private final static int edit_quick_reply = 64;
 
@@ -3978,6 +3982,13 @@ public class ChatActivity extends BaseFragment implements
                     if (!getMessagesController().getTranslateController().toggleTranslatingDialog(getDialogId(), true)) {
                         updateTopPanel(true);
                     }
+                } else if (id == ai_autotranslate) {
+                    // Форк: перемикаємо і одразу перевіряємо видимі повідомлення,
+                    // щоб переклад з'явився без очікування прокрутки.
+                    final boolean on = !org.telegram.ai.AiAutoTranslate.isEnabled(getDialogId());
+                    org.telegram.ai.AiAutoTranslate.setEnabled(getDialogId(), on);
+                    updateAiAutoTranslateItem();
+                    checkTranslation(true);
                 } else if (id == call || id == video_call) {
                     if (currentUser != null && getParentActivity() != null) {
                         VoIPHelper.startCall(currentUser, id == video_call, userInfo != null && userInfo.video_calls_available, getParentActivity(), getMessagesController().getUserFull(currentUser.id), getAccountInstance());
@@ -4430,6 +4441,11 @@ public class ChatActivity extends BaseFragment implements
             }
             translateItem = headerItem.lazilyAddSubItem(translate, R.drawable.msg_translate, LocaleController.getString(R.string.TranslateMessage));
             updateTranslateItemVisibility();
+            // Форк: автопереклад через Claude. Вбудований автопереклад Telegram
+            // доступний лише з Premium, тож це не дублювання, а заміна тієї
+            // функції власним двигуном.
+            aiAutoTranslateItem = headerItem.lazilyAddSubItem(ai_autotranslate, R.drawable.outline_ai_translate2, LocaleController.getString(R.string.AiAutoTranslate));
+            updateAiAutoTranslateItem();
             if (currentChat != null && !currentChat.creator && !ChatObject.hasAdminRights(currentChat)) {
                 headerItem.lazilyAddSubItem(report, R.drawable.msg_report, LocaleController.getString(R.string.ReportChat));
             }
@@ -11251,6 +11267,27 @@ public class ChatActivity extends BaseFragment implements
             return;
         }
         translateItem.setVisibility(getMessagesController().getTranslateController().isTranslateDialogHidden(getDialogId()) && getMessagesController().getTranslateController().isDialogTranslatable(getDialogId()) ? View.VISIBLE : View.GONE);
+    }
+
+    /**
+     * Форк: стан пункту автоперекладу через Claude.
+     *
+     * <p>Показуємо його лише коли заданий ключ — інакше пункт обіцяв би дію,
+     * яка гарантовано не спрацює. Текст міняється на «Вимкнути…», щоб стан
+     * було видно без окремої позначки.
+     */
+    private void updateAiAutoTranslateItem() {
+        if (aiAutoTranslateItem == null) {
+            return;
+        }
+        if (!org.telegram.ai.AiConfig.isReady()) {
+            aiAutoTranslateItem.setVisibility(View.GONE);
+            return;
+        }
+        aiAutoTranslateItem.setVisibility(View.VISIBLE);
+        aiAutoTranslateItem.setText(LocaleController.getString(
+                org.telegram.ai.AiAutoTranslate.isEnabled(getDialogId())
+                        ? R.string.AiAutoTranslateOff : R.string.AiAutoTranslate));
     }
 
     private Animator infoTopViewAnimator;
@@ -24860,9 +24897,14 @@ public class ChatActivity extends BaseFragment implements
                         }
                     } else {
                         final int mid = messageObject.getId();
+                        final boolean onScreen = mid >= minId - 7 && mid <= maxId + 7;
                         getMessagesController().getTranslateController().checkTranslation(
-                            messageObject, mid >= minId - 7 && mid <= maxId + 7
+                            messageObject, onScreen
                         );
+                        // Форк: наш автопереклад через Claude. Той самий гачок і
+                        // те саме обмеження видимим діапазоном — щоб не перекладати
+                        // (і не оплачувати) всю історію чату.
+                        org.telegram.ai.AiAutoTranslate.check(currentAccount, messageObject, onScreen);
                     }
                 }
             }
