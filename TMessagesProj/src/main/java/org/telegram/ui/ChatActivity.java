@@ -3988,6 +3988,14 @@ public class ChatActivity extends BaseFragment implements
                     final boolean on = !org.telegram.ai.AiAutoTranslate.isEnabled(getDialogId());
                     org.telegram.ai.AiAutoTranslate.setEnabled(getDialogId(), on);
                     updateAiAutoTranslateItem();
+                    // Меню закривається одразу, тож без сповіщення користувач
+                    // не побачив би жодної реакції на натискання.
+                    BulletinFactory.of(ChatActivity.this).createSimpleBulletin(
+                            R.raw.chats_infotip,
+                            LocaleController.getString(on
+                                    ? R.string.AiAutoTranslateEnabled
+                                    : R.string.AiAutoTranslateDisabled)
+                    ).show();
                     checkTranslation(true);
                 } else if (id == call || id == video_call) {
                     if (currentUser != null && getParentActivity() != null) {

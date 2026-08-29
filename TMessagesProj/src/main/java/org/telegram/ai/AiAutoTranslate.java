@@ -61,6 +61,9 @@ public class AiAutoTranslate {
     public static void setEnabled(long dialogId, boolean enabled) {
         if (enabled) {
             prefs().edit().putBoolean(String.valueOf(dialogId), true).apply();
+            // Даємо помилці шанс показатися знову: користувач міг щойно
+            // виправити ключ і вмикає автопереклад повторно.
+            errorReported = false;
         } else {
             prefs().edit().remove(String.valueOf(dialogId)).apply();
         }
@@ -120,9 +123,11 @@ public class AiAutoTranslate {
             @Override
             public void onError(String message) {
                 release(id);
-                // Мовчки: автопереклад працює у фоні, і сповіщення про кожну
-                // невдачу дратувало б більше, ніж допомагало. Помилку видно
-                // при ручному перекладі, куди користувач іде свідомо.
+                // Про кожну невдачу не повідомляємо — автопереклад працює у
+                // фоні, і потік сповіщень дратував би. Але ПЕРШУ показуємо:
+                // інакше при невалідному ключі чи відсутній мережі функція
+                // просто мовчить, і зрозуміти, що не так, неможливо.
+                reportFirstError(message);
             }
         });
     }
@@ -131,6 +136,24 @@ public class AiAutoTranslate {
         synchronized (inFlight) {
             inFlight.remove(id);
         }
+    }
+
+    /**
+     * Чи показували вже помилку в цьому сеансі. Скидається при вмиканні
+     * автоперекладу — щоб після виправлення ключа перша невдача знову була
+     * помітною.
+     */
+    private static volatile boolean errorReported;
+
+    private static void reportFirstError(String message) {
+        if (errorReported || TextUtils.isEmpty(message)) {
+            return;
+        }
+        errorReported = true;
+        NotificationCenter.getGlobalInstance().postNotificationName(
+                NotificationCenter.showBulletin,
+                org.telegram.ui.Components.Bulletin.TYPE_ERROR,
+                message);
     }
 
     /**

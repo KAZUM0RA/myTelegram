@@ -2,6 +2,8 @@
 <resources>
     <string name="AppName">MyTelegram</string>
     <string name="AppNameBeta">MyTelegram Beta</string>
+    <string name="AiAutoTranslateEnabled">Автопереклад увімкнено для цього чату</string>
+    <string name="AiAutoTranslateDisabled">Автопереклад вимкнено</string>
     <string name="AiAutoTranslate">Автопереклад через AI</string>
     <string name="AiAutoTranslateOff">Вимкнути автопереклад AI</string>
     <string name="AiTranslateMenuItem">Перекласти через AI</string>

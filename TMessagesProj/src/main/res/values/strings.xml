@@ -2,6 +2,8 @@
 <resources>
     <string name="AppName">MyTelegram</string>
     <string name="AppNameBeta">MyTelegram Beta</string>
+    <string name="AiAutoTranslateEnabled">AI auto-translate is on for this chat</string>
+    <string name="AiAutoTranslateDisabled">AI auto-translate is off</string>
     <string name="AiAutoTranslate">AI auto-translate</string>
     <string name="AiAutoTranslateOff">Turn off AI auto-translate</string>
     <string name="AiTranslateMenuItem">Translate with AI</string>
