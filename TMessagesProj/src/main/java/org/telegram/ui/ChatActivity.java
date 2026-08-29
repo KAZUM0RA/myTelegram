@@ -45939,12 +45939,17 @@ public class ChatActivity extends BaseFragment implements
                         items.add(LocaleController.getString(R.string.AiReply));
                         options.add(OPTION_AI_REPLY);
                         icons.add(R.drawable.menu_reply);
-                        if (selectedObject != null && selectedObject.isVoice() && org.telegram.ai.AiConfig.supportsAudio()) {
-                            items.add(LocaleController.getString(R.string.AiVoiceRead));
-                            options.add(OPTION_AI_VOICE);
-                            icons.add(R.drawable.msg_text_outlined);
-                        }
                     }
+                }
+                // Форк: розпізнавання голосового — ОКРЕМА умова.
+                // Всередині блоку «Перекласти» цей пункт не працював: та умова
+                // вимагає непорожній getMessageTextToTranslate(), а в голосового
+                // тексту немає за визначенням, тож увесь блок пропускався.
+                if (selectedObject != null && selectedObject.isVoice()
+                        && org.telegram.ai.AiConfig.isReady() && org.telegram.ai.AiConfig.supportsAudio()) {
+                    items.add(LocaleController.getString(R.string.AiVoiceRead));
+                    options.add(OPTION_AI_VOICE);
+                    icons.add(R.drawable.msg_text_outlined);
                 }
                 if (message.canEditMessage(currentChat) && message.type != MessageObject.TYPE_POLL || chatMode == MODE_WELCOME_MESSAGES) {
                     items.add(LocaleController.getString(R.string.Edit));
@@ -46302,12 +46307,17 @@ public class ChatActivity extends BaseFragment implements
                         items.add(LocaleController.getString(R.string.AiReply));
                         options.add(OPTION_AI_REPLY);
                         icons.add(R.drawable.menu_reply);
-                        if (selectedObject != null && selectedObject.isVoice() && org.telegram.ai.AiConfig.supportsAudio()) {
-                            items.add(LocaleController.getString(R.string.AiVoiceRead));
-                            options.add(OPTION_AI_VOICE);
-                            icons.add(R.drawable.msg_text_outlined);
-                        }
                     }
+                }
+                // Форк: розпізнавання голосового — ОКРЕМА умова.
+                // Всередині блоку «Перекласти» цей пункт не працював: та умова
+                // вимагає непорожній getMessageTextToTranslate(), а в голосового
+                // тексту немає за визначенням, тож увесь блок пропускався.
+                if (selectedObject != null && selectedObject.isVoice()
+                        && org.telegram.ai.AiConfig.isReady() && org.telegram.ai.AiConfig.supportsAudio()) {
+                    items.add(LocaleController.getString(R.string.AiVoiceRead));
+                    options.add(OPTION_AI_VOICE);
+                    icons.add(R.drawable.msg_text_outlined);
                 }
                 if (allowEdit || chatMode == MODE_WELCOME_MESSAGES) {
                     items.add(LocaleController.getString(R.string.Edit));
