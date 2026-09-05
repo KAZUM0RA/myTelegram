@@ -59,12 +59,27 @@ public final class WordPack {
                 .getSharedPreferences(PREFS, Context.MODE_PRIVATE);
     }
 
+    /**
+     * Обраний словник. Значення кешується в пам'яті навмисно.
+     *
+     * <p>{@link #override(String)} виконується на КОЖЕН напис у застосунку —
+     * тисячі разів на побудову екрана. Похід у SharedPreferences щоразу
+     * означав би тисячі синхронізованих звернень на головному потоці. Кеш
+     * скидається лише при зміні словника, тобто раз на кілька місяців.
+     */
+    private static volatile String activeId;
+
     public static String getActiveId() {
-        try {
-            return prefs().getString(PREF_ACTIVE, STANDARD);
-        } catch (Throwable e) {
-            return STANDARD;
+        String id = activeId;
+        if (id == null) {
+            try {
+                id = prefs().getString(PREF_ACTIVE, STANDARD);
+            } catch (Throwable e) {
+                id = STANDARD;
+            }
+            activeId = id;
         }
+        return id;
     }
 
     public static void setActive(String id) {
@@ -75,6 +90,7 @@ public final class WordPack {
         }
         // Скидаємо кеш, а не перезавантажуємо: наступний getString() зробить
         // це сам, і лише якщо словник справді знадобиться.
+        activeId = id == null ? STANDARD : id;
         loaded = null;
         loadedId = null;
     }
