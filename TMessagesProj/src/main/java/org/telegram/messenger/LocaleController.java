@@ -1440,7 +1440,12 @@ public class LocaleController {
      * весь переклад інтерфейсу, — тому виняток робимо саме для цих ключів.
      */
     private static boolean isAppNameKey(String key) {
-        return "AppName".equals(key) || "AppNameBeta".equals(key);
+        // TelegramVersion додано пізніше з тієї ж причини: у налаштуваннях
+        // унизу світилося «Telegram для Android v12.10.1», бо хмарний рядок
+        // перекривав наш локальний. Форк не має видавати себе за офіційний
+        // застосунок — це вимога ліцензії, а не косметика.
+        return "AppName".equals(key) || "AppNameBeta".equals(key)
+                || "TelegramVersion".equals(key);
     }
 
     private String getStringInternal(String key, String fallback, int fallbackRes, int res) {
