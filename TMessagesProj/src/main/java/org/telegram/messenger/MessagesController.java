@@ -1603,8 +1603,20 @@ public class MessagesController extends BaseController implements NotificationCe
         canRevokePmInbox = mainPreferences.getBoolean("canRevokePmInbox", canRevokePmInbox);
         preloadFeaturedStickers = mainPreferences.getBoolean("preloadFeaturedStickers", false);
         youtubePipType = mainPreferences.getString("youtubePipType", "disabled");
-        keepAliveService = mainPreferences.getBoolean("keepAliveService", false);
-        backgroundConnection = mainPreferences.getBoolean("backgroundConnection", false);
+        // Форк: типово УВІМКНЕНО, на відміну від апстріму.
+        //
+        // В офіційній збірці сповіщення приходять через push від Firebase, а
+        // фонове з'єднання — запасний варіант для пристроїв без Google. У нас
+        // push недоступний у принципі: після перейменування пакета токен FCM
+        // не видається, і сервер Telegram не має куди слати (докладніше —
+        // коментар у кінці TMessagesProj_App/build.gradle). Тож для нас це не
+        // запасний варіант, а єдиний, і вимкненим бути не може.
+        //
+        // Симптом, через який це знайшлося: якщо застосунок довго не
+        // запускали, повідомлення приходили лише при відкритті — про нові
+        // ніхто не сповіщав.
+        keepAliveService = mainPreferences.getBoolean("keepAliveService", true);
+        backgroundConnection = mainPreferences.getBoolean("backgroundConnection", true);
         promoDialogId = mainPreferences.getLong("proxy_dialog", 0);
         nextPromoInfoCheckTime = mainPreferences.getInt("nextPromoInfoCheckTime", 0);
         promoDialogType = mainPreferences.getInt("promo_dialog_type", 0);
@@ -3009,9 +3021,13 @@ public class MessagesController extends BaseController implements NotificationCe
                     break;
                 }
                 case "background_connection": {
+                    // Форк: вказівку сервера вимкнути ігноруємо. Сервер вважає,
+                    // що в нас працює push, бо про його відсутність ми йому не
+                    // повідомляємо. Послухавшись, ми лишилися б узагалі без
+                    // сповіщень. Увімкнення від сервера приймаємо як є.
                     if (value.value instanceof TLRPC.TL_jsonBool) {
                         TLRPC.TL_jsonBool bool = (TLRPC.TL_jsonBool) value.value;
-                        if (bool.value != backgroundConnection) {
+                        if (bool.value && bool.value != backgroundConnection) {
                             backgroundConnection = bool.value;
                             editor.putBoolean("backgroundConnection", backgroundConnection);
                             changed = true;
@@ -3021,9 +3037,10 @@ public class MessagesController extends BaseController implements NotificationCe
                     break;
                 }
                 case "keep_alive_service": {
+                    // Форк: те саме — вимкнення від сервера ігноруємо.
                     if (value.value instanceof TLRPC.TL_jsonBool) {
                         TLRPC.TL_jsonBool bool = (TLRPC.TL_jsonBool) value.value;
-                        if (bool.value != keepAliveService) {
+                        if (bool.value && bool.value != keepAliveService) {
                             keepAliveService = bool.value;
                             editor.putBoolean("keepAliveService", keepAliveService);
                             changed = true;

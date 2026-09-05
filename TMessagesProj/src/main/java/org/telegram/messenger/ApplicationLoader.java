@@ -367,7 +367,11 @@ public class ApplicationLoader extends Application {
         if (preferences.contains("pushService")) {
             enabled = preferences.getBoolean("pushService", true);
         } else {
-            enabled = MessagesController.getMainSettings(UserConfig.selectedAccount).getBoolean("keepAliveService", false);
+            // Форк: типово УВІМКНЕНО. Читається саме звідси, а не з поля
+            // MessagesController.keepAliveService, тож значення треба міняти
+            // і тут — інакше налаштування показувало б «увімкнено», а служба
+            // не запускалася б.
+            enabled = MessagesController.getMainSettings(UserConfig.selectedAccount).getBoolean("keepAliveService", true);
         }
         if (enabled) {
             try {
