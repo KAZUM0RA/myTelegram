@@ -284,7 +284,19 @@ public class ConnectionsManager extends BaseController {
         if (preferences.contains("pushConnection")) {
             return preferences.getBoolean("pushConnection", true);
         } else {
-            return MessagesController.getMainSettings(UserConfig.selectedAccount).getBoolean("backgroundConnection", false);
+            // Форк: типово УВІМКНЕНО. Це друге місце, яке читає налаштування
+            // напряму, а не через поле MessagesController.backgroundConnection,
+            // і я його вже раз проґавив — так само, як у
+            // ApplicationLoader.startPushService().
+            //
+            // Наслідок був точно такий, як скаржився користувач: служба
+            // переднього плану жива, процес не вбитий, а повідомлення при
+            // закритому застосунку не приходять. Бо процес — це ще не
+            // з'єднання: постійне з'єднання для оновлень вмикається саме тут.
+            //
+            // Нам воно потрібне завжди: push від Firebase форку недоступний
+            // (див. коментар у кінці TMessagesProj_App/build.gradle).
+            return MessagesController.getMainSettings(UserConfig.selectedAccount).getBoolean("backgroundConnection", true);
         }
     }
 
