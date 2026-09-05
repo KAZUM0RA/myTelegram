@@ -184,6 +184,25 @@ android {
             buildConfigField "int", "VERSION_NUM", "0"
         }
 
+        // ── Форк: щоденна збірка ──────────────────────────────────────────
+        // Те саме, що debug, але без налагодження. Причина: заміри показали,
+        // що 74% кадрів не встигають у 120 Гц, а застосунок займає 736 МБ —
+        // і те, й те тягнеться з налагоджувального режиму.
+        //
+        // DEBUG_VERSION = false вимикає докладне журналювання. Воно не
+        // зникає назавжди: BuildVars читає ще й налаштування "logsEnabled",
+        // тож логи можна ввімкнути на час діагностики.
+        //
+        // Ім'я пакета й ключ підпису ті самі, що в debug (успадковані через
+        // initWith), тож збірка стає ПОВЕРХ наявної без втрати сесії, і так
+        // само можна повернутися назад.
+        fast {
+            initWith debug
+            matchingFallbacks = ['debug']
+            buildConfigField "boolean", "DEBUG_VERSION", "false"
+            buildConfigField "boolean", "DEBUG_PRIVATE_VERSION", "false"
+        }
+
         HA_private {
             matchingFallbacks = ['release']
             jniDebuggable false

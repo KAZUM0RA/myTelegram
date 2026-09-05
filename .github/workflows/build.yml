@@ -146,7 +146,11 @@ jobs:
           echo "Збираю під: $ABIS"
           # -Dorg.gradle.jvmargs перекриває -Xmx8g із gradle.properties:
           # раннер має лише ~7 ГБ RAM і з 8 ГБ heap Gradle не стартує.
-          ./gradlew :TMessagesProj_App:assembleAfatDebug \
+          # Форк: збираємо fast, а не debug. Замір показав різницю вчетверо
+          # на запуску (1370 проти 350 мс) і APK на третину менший. Якби CI
+          # і далі клав у реліз налагоджувальну збірку, автооновлення
+          # повертало б її на телефон і скасовувало всю оптимізацію.
+          ./gradlew :TMessagesProj_App:assembleAfatFast \
             -PTARGET_ABIS="$ABIS" \
             -PUSE_CCACHE \
             -Dorg.gradle.jvmargs="-Xmx4g -XX:MaxMetaspaceSize=1g" \

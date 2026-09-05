@@ -70,6 +70,34 @@ android {
             ndk.debugSymbolLevel = 'FULL'
         }
 
+        // ── Форк: щоденна збірка ──────────────────────────────────────────
+        // Успадковує від debug ім'я пакета (.beta) і ключ підпису, тож
+        // ставиться поверх наявної збірки без втрати сесії — і назад так
+        // само. Відрізняється трьома речами:
+        //
+        //   debuggable false  — середовище виконання перестає тримати
+        //                       підтримку налагодження, через яку частина
+        //                       оптимізацій не застосовується;
+        //   minifyEnabled     — R8 прибирає мертвий код і класи; це головна
+        //                       причина 736 МБ у налагоджувальній збірці;
+        //   shrinkResources   — те саме для ресурсів.
+        //
+        // Обфускації немає: у proguard-rules.pro стоїть -dontobfuscate, тож
+        // імена в звітах про збої лишаються читабельними.
+        //
+        // jniDebuggable свідомо лишається як у debug: нативна частина й так
+        // компілюється з -Os/-O3 (перевірено в CMakeCache), тож вимкнення
+        // нічого не пришвидшить, зате змінило б тип збірки CMake і потягло
+        // повну перезбірку всієї нативної частини.
+        fast {
+            initWith debug
+            matchingFallbacks = ['debug']
+            debuggable false
+            minifyEnabled true
+            shrinkResources true
+            ndk.debugSymbolLevel = 'NONE'
+        }
+
         standalone {
             debuggable false
             jniDebuggable false
@@ -95,6 +123,12 @@ android {
     }
 
     sourceSets.debug {
+        manifest.srcFile '../TMessagesProj/config/debug/AndroidManifest.xml'
+    }
+
+    // Форк: новий тип збірки потребує власного маніфесту — initWith його не
+    // копіює. Беремо той самий, що й debug: пакет і призначення ті самі.
+    sourceSets.fast {
         manifest.srcFile '../TMessagesProj/config/debug/AndroidManifest.xml'
     }
 
@@ -142,6 +176,9 @@ android {
                 abiFilters.addAll(targetAbis())
             }
             sourceSets.debug {
+                manifest.srcFile '../TMessagesProj/config/debug/AndroidManifest_SDK23.xml'
+            }
+            sourceSets.fast {
                 manifest.srcFile '../TMessagesProj/config/debug/AndroidManifest_SDK23.xml'
             }
             sourceSets.release {
