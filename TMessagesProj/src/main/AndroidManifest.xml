@@ -129,6 +129,57 @@
             <meta-data android:name="android.app.shortcuts" android:resource="@xml/shortcuts" />
         </activity-alias>
 
+        <!-- ── Форк: кольорові варіанти нашої іконки ────────────────────
+             Псевдоніми, а не окремий механізм: LauncherIconController
+             вимикає всі іконки зі СВОГО списку й вмикає одну. Якби ми
+             зробили щось збоку, його tryFixLauncherIconIfNeeded() не
+             побачив би жодної «своєї» ввімкненої і скинув би вибір на
+             типову. Тому наші варіанти додано і сюди, і в той список. -->
+        <activity-alias
+            android:enabled="false"
+            android:name="org.telegram.messenger.ForkAmethystIcon"
+            android:icon="@mipmap/fork_amethyst"
+            android:roundIcon="@mipmap/fork_amethyst"
+            android:targetActivity="org.telegram.ui.LaunchActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+                <category android:name="android.intent.category.MULTIWINDOW_LAUNCHER" />
+            </intent-filter>
+            <meta-data android:name="android.app.shortcuts" android:resource="@xml/shortcuts" />
+        </activity-alias>
+
+        <activity-alias
+            android:enabled="false"
+            android:name="org.telegram.messenger.ForkEmeraldIcon"
+            android:icon="@mipmap/fork_emerald"
+            android:roundIcon="@mipmap/fork_emerald"
+            android:targetActivity="org.telegram.ui.LaunchActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+                <category android:name="android.intent.category.MULTIWINDOW_LAUNCHER" />
+            </intent-filter>
+            <meta-data android:name="android.app.shortcuts" android:resource="@xml/shortcuts" />
+        </activity-alias>
+
+        <activity-alias
+            android:enabled="false"
+            android:name="org.telegram.messenger.ForkAmberIcon"
+            android:icon="@mipmap/fork_amber"
+            android:roundIcon="@mipmap/fork_amber"
+            android:targetActivity="org.telegram.ui.LaunchActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+                <category android:name="android.intent.category.MULTIWINDOW_LAUNCHER" />
+            </intent-filter>
+            <meta-data android:name="android.app.shortcuts" android:resource="@xml/shortcuts" />
+        </activity-alias>
+
         <activity-alias
             android:enabled="false"
             android:name="org.telegram.messenger.VintageIcon"

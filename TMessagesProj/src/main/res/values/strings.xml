@@ -33,6 +33,11 @@
     <string name="ConnectionServiceTitle">MyTelegram is connected</string>
     <string name="ConnectionServiceText">Keeps a connection so messages arrive while the app is closed.</string>
     <string name="ConnectionServiceChannel">Background connection</string>
+    <string name="AppIconTitle">App icon</string>
+    <string name="AppIconForkAmethyst">Amethyst</string>
+    <string name="AppIconForkEmerald">Emerald</string>
+    <string name="AppIconForkAmber">Amber</string>
+    <string name="AppIconInfo">Only the colour changes — the drawing is the same. Under a themed launcher the colour is set by the system, so the choice shows on the home screen only in the usual mode.</string>
     <string name="UpdateAutoRow">Check automatically</string>
     <string name="UpdateNotificationTitle">New build available</string>
     <string name="UpdateNotificationText">Build %1$s. Open Settings to install.</string>

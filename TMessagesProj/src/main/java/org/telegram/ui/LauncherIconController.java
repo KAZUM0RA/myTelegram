@@ -39,7 +39,21 @@ public class LauncherIconController {
         AQUA("AquaIcon", R.drawable.icon_4_background_sa, R.mipmap.icon_foreground_sa, R.string.AppIconAqua),
         PREMIUM("PremiumIcon", R.drawable.icon_3_background_sa, R.mipmap.icon_3_foreground_sa, R.string.AppIconPremium, true),
         TURBO("TurboIcon", R.drawable.icon_5_background_sa, R.mipmap.icon_5_foreground_sa, R.string.AppIconTurbo, true),
-        NOX("NoxIcon", R.mipmap.icon_2_background_sa, R.mipmap.icon_foreground_sa, R.string.AppIconNox, true);
+        NOX("NoxIcon", R.mipmap.icon_2_background_sa, R.mipmap.icon_foreground_sa, R.string.AppIconNox, true),
+
+        // Форк: кольорові варіанти нашої іконки. Мають бути саме в цьому
+        // списку: tryFixLauncherIconIfNeeded() перевіряє лише його і скинув
+        // би вибір на типову, якби вважав, що жодна іконка не ввімкнена.
+        //
+        // Тло чорне, як у самому зображенні; передній план — саме зображення.
+        // Такий самий поділ, як в адаптивній іконці, тож попередній перегляд
+        // у налаштуваннях виглядає так само, як на робочому столі.
+        FORK_AMETHYST("ForkAmethystIcon", R.drawable.fork_icon_background,
+                R.mipmap.fork_amethyst_fg, R.string.AppIconForkAmethyst),
+        FORK_EMERALD("ForkEmeraldIcon", R.drawable.fork_icon_background,
+                R.mipmap.fork_emerald_fg, R.string.AppIconForkEmerald),
+        FORK_AMBER("ForkAmberIcon", R.drawable.fork_icon_background,
+                R.mipmap.fork_amber_fg, R.string.AppIconForkAmber);
 
         public final String key;
         public final int background;

@@ -34,6 +34,11 @@
     <string name="ConnectionServiceText">Тримає зʼєднання, щоб повідомлення приходили і коли застосунок закритий.</string>
     <string name="ConnectionServiceChannel">Фонове зʼєднання</string>
     <string name="TelegramVersion">MyTelegram — неофіційний форк %1$s</string>
+    <string name="AppIconTitle">Іконка застосунку</string>
+    <string name="AppIconForkAmethyst">Аметист</string>
+    <string name="AppIconForkEmerald">Смарагд</string>
+    <string name="AppIconForkAmber">Бурштин</string>
+    <string name="AppIconInfo">Змінюється лише колір — малюнок той самий. Під тематичними значками колір задає система, тож вибір видно на робочому столі тільки у звичайному режимі.</string>
     <string name="UpdateAutoRow">Перевіряти автоматично</string>
     <string name="UpdateNotificationTitle">Є нова збірка</string>
     <string name="UpdateNotificationText">Збірка %1$s. Відкрий налаштування, щоб встановити.</string>

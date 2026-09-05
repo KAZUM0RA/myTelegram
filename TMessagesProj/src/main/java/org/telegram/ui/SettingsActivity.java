@@ -707,6 +707,8 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         // Форк: оновлення з релізів GitHub. Магазинів для неофіційної збірки
         // немає, тож інакше про нову версію дізнатися нізвідки.
         items.add(SettingCell.Factory.of(902, IconBackgroundColors.GREEN.top, IconBackgroundColors.GREEN.bottom, R.drawable.settings_devices, getString(R.string.UpdateTitle), org.telegram.update.UpdateChecker.currentCommit()));
+        // Форк: кольоровий варіант іконки на робочому столі.
+        items.add(SettingCell.Factory.of(903, IconBackgroundColors.PURPLE.top, IconBackgroundColors.PURPLE.bottom, R.drawable.msg_photos, getString(R.string.AppIconTitle), currentIconName()));
 
         items.add(UItem.asShadow(null));
 
@@ -761,6 +763,16 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         }
 
         items.add(UItem.asCustomShadow(versionView));
+    }
+
+    /** Форк: назва обраного варіанта іконки для підзаголовка. */
+    private String currentIconName() {
+        for (LauncherIconController.LauncherIcon icon : LauncherIconController.LauncherIcon.values()) {
+            if (LauncherIconController.isEnabled(icon)) {
+                return getString(icon.title);
+            }
+        }
+        return getString(R.string.AppIconDefault);
     }
 
     /** Форк: назва активного словника для підзаголовка рядка налаштувань. */
@@ -868,6 +880,9 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 break;
             case 902: // Форк: оновлення з GitHub
                 presentSettingFragment(new UpdateActivity());
+                break;
+            case 903: // Форк: іконка застосунку
+                presentSettingFragment(new AppIconActivity());
                 break;
 
             case 11:

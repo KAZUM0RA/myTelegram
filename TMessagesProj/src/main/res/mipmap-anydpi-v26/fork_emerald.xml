@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Форк: варіант іконки «emerald». Шари ті самі, що в типової; різниця лише
+     в кольорі переднього плану. Монохромний шар спільний — під темою колір
+     однаково задає система, тож окремі версії там не мали б сенсу. -->
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@drawable/fork_icon_background" />
+    <foreground android:drawable="@mipmap/fork_emerald_fg" />
+    <monochrome android:drawable="@drawable/fork_icon_monochrome" />
+</adaptive-icon>
