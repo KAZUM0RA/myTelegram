@@ -33,6 +33,10 @@
     <string name="ConnectionServiceTitle">MyTelegram is connected</string>
     <string name="ConnectionServiceText">Keeps a connection so messages arrive while the app is closed.</string>
     <string name="ConnectionServiceChannel">Background connection</string>
+    <string name="UpdateAutoRow">Check automatically</string>
+    <string name="UpdateNotificationTitle">New build available</string>
+    <string name="UpdateNotificationText">Build %1$s. Open Settings to install.</string>
+    <string name="UpdateNotificationChannel">Updates</string>
     <string name="UpdateTitle">Updates</string>
     <string name="UpdateSectionBuild">Build</string>
     <string name="UpdateSectionAccess">Access</string>
@@ -47,7 +51,7 @@
     <string name="UpdateDownload">Download</string>
     <string name="UpdateDownloading">Downloading…</string>
     <string name="UpdateInfo">Compares the installed build with the latest release on GitHub. There is no store for an unofficial build, so this is the only way to learn about a new version.</string>
-    <string name="UpdateTokenInfo">The repository is private, so a GitHub token with read access to it is needed. Create a fine-grained token with Contents: Read-only. It is stored encrypted, like the AI key. If you make the repository public, no token is needed.</string>
+    <string name="UpdateTokenInfo">The repository is public, so no token is needed — the field stays in case you make it private later. The token is stored encrypted, like the AI key.</string>
     <string name="UpdateNeedPermissionTitle">Permission needed</string>
     <string name="UpdateNeedPermissionText">Android needs permission to install apps from this source. Without it nothing will happen.</string>
     <string name="UpdateErrorNoToken">Repository not found. It is private — add a GitHub token below.</string>

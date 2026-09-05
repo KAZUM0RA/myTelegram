@@ -33,6 +33,10 @@
     <string name="ConnectionServiceTitle">MyTelegram на звʼязку</string>
     <string name="ConnectionServiceText">Тримає зʼєднання, щоб повідомлення приходили і коли застосунок закритий.</string>
     <string name="ConnectionServiceChannel">Фонове зʼєднання</string>
+    <string name="UpdateAutoRow">Перевіряти автоматично</string>
+    <string name="UpdateNotificationTitle">Є нова збірка</string>
+    <string name="UpdateNotificationText">Збірка %1$s. Відкрий налаштування, щоб встановити.</string>
+    <string name="UpdateNotificationChannel">Оновлення</string>
     <string name="UpdateTitle">Оновлення</string>
     <string name="UpdateSectionBuild">Збірка</string>
     <string name="UpdateSectionAccess">Доступ</string>
@@ -47,10 +51,10 @@
     <string name="UpdateDownload">Завантажити</string>
     <string name="UpdateDownloading">Завантаження…</string>
     <string name="UpdateInfo">Звіряє встановлену збірку з останнім релізом на GitHub. Магазину для неофіційної збірки немає, тож інакше про нову версію дізнатися нізвідки.</string>
-    <string name="UpdateTokenInfo">Репозиторій приватний, тож потрібен токен GitHub із доступом на читання. Створи fine-grained токен із дозволом Contents: Read-only. Зберігається зашифрованим, як і AI-ключ. Якщо зробиш репозиторій публічним, токен не потрібен.</string>
+    <string name="UpdateTokenInfo">Репозиторій публічний, тож токен не потрібен — поле лишається на випадок, якщо колись зробиш його приватним. Токен зберігається зашифрованим, як і AI-ключ.</string>
     <string name="UpdateNeedPermissionTitle">Потрібен дозвіл</string>
     <string name="UpdateNeedPermissionText">Android вимагає дозволу встановлювати застосунки з цього джерела. Без нього не станеться нічого.</string>
-    <string name="UpdateErrorNoToken">Репозиторій не знайдено. Він приватний — додай токен GitHub нижче.</string>
+    <string name="UpdateErrorNoToken">Репозиторій або реліз не знайдено. Якщо репозиторій приватний, додай токен GitHub нижче.</string>
     <string name="UpdateErrorBadToken">GitHub відхилив токен. Перевір, чи має він доступ на читання репозиторію.</string>
     <string name="UpdateErrorNoRelease">Релізу debug-latest не знайдено.</string>
     <string name="UpdateErrorNoApk">До релізу не прикріплено APK.</string>

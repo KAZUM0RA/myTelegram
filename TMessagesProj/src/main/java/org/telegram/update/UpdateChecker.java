@@ -4,6 +4,8 @@
 
 package org.telegram.update;
 
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.text.TextUtils;
 
 import org.json.JSONArray;
@@ -95,6 +97,90 @@ public final class UpdateChecker {
 
     public static boolean hasToken() {
         return AiKeyStorage.isAvailable() && AiKeyStorage.hasKey(TOKEN_PROVIDER);
+    }
+
+    // ── Автоматична перевірка ────────────────────────────────────────────
+
+    private static final String PREFS = "update";
+    private static final String PREF_AUTO = "auto";
+    private static final String PREF_LAST_CHECK = "lastCheck";
+    private static final String PREF_LAST_SEEN = "lastSeenCommit";
+
+    /**
+     * Як часто дозволено ходити на GitHub.
+     *
+     * <p>Шість годин, а не «щоразу при запуску»: без токена GitHub дозволяє
+     * 60 запитів на годину з однієї адреси, і застосунок, який відкривають
+     * десятки разів на день, легко вичерпав би ліміт на порожньому місці.
+     */
+    private static final long CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000L;
+
+    private static SharedPreferences prefs() {
+        return ApplicationLoader.applicationContext
+                .getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+    }
+
+    public static boolean isAutoCheckEnabled() {
+        try {
+            return prefs().getBoolean(PREF_AUTO, true);
+        } catch (Throwable e) {
+            return false;
+        }
+    }
+
+    public static void setAutoCheckEnabled(boolean enabled) {
+        try {
+            prefs().edit().putBoolean(PREF_AUTO, enabled).apply();
+        } catch (Throwable ignored) {
+        }
+    }
+
+    /**
+     * Тиха перевірка при запуску. Показує сповіщення, якщо є новіша збірка.
+     *
+     * <p>Помилки навмисно мовчазні: користувач цієї перевірки не просив, і
+     * скарга на недоступний GitHub при кожному відкритті застосунку була б
+     * гіршою за саму відсутність оновлення.
+     */
+    public static void checkInBackground() {
+        if (!isAutoCheckEnabled()) {
+            return;
+        }
+        final SharedPreferences prefs;
+        try {
+            prefs = prefs();
+        } catch (Throwable e) {
+            return;
+        }
+        final long now = System.currentTimeMillis();
+        final long last = prefs.getLong(PREF_LAST_CHECK, 0);
+        // Порівнюємо в обидва боки: годинник можна перевести назад, і тоді
+        // різниця стане від'ємною, а перевірка не спрацювала б ніколи.
+        if (last != 0 && Math.abs(now - last) < CHECK_INTERVAL_MS) {
+            return;
+        }
+        prefs.edit().putLong(PREF_LAST_CHECK, now).apply();
+
+        check(new CheckCallback() {
+            @Override
+            public void onResult(Update update) {
+                // Про ту саму збірку нагадуємо лише раз: інакше сповіщення
+                // з'являлося б кожні шість годин, доки не оновишся.
+                if (update.commit.equals(prefs.getString(PREF_LAST_SEEN, ""))) {
+                    return;
+                }
+                prefs.edit().putString(PREF_LAST_SEEN, update.commit).apply();
+                UpdateNotification.show(update.commit);
+            }
+
+            @Override
+            public void onUpToDate() {
+            }
+
+            @Override
+            public void onError(String message) {
+            }
+        });
     }
 
     // ── Перевірка ────────────────────────────────────────────────────────

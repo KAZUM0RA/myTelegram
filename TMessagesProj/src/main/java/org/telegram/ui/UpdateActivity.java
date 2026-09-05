@@ -34,6 +34,7 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.HeaderCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
+import org.telegram.ui.Cells.TextCheckCell;
 import org.telegram.ui.Cells.TextSettingsCell;
 import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.EditTextBoldCursor;
@@ -55,6 +56,7 @@ public class UpdateActivity extends BaseFragment {
     private TextSettingsCell currentCell;
     private TextSettingsCell checkCell;
     private TextSettingsCell tokenCell;
+    private org.telegram.ui.Cells.TextCheckCell autoCell;
 
     @Override
     public View createView(Context context) {
@@ -81,6 +83,17 @@ public class UpdateActivity extends BaseFragment {
 
         checkCell = row(context, v -> check());
         root.addView(checkCell);
+
+        autoCell = new TextCheckCell(context);
+        autoCell.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+        autoCell.setTextAndCheck(getString(R.string.UpdateAutoRow),
+                UpdateChecker.isAutoCheckEnabled(), false);
+        autoCell.setOnClickListener(v -> {
+            final boolean enabled = !UpdateChecker.isAutoCheckEnabled();
+            UpdateChecker.setAutoCheckEnabled(enabled);
+            autoCell.setChecked(enabled);
+        });
+        root.addView(autoCell);
 
         root.addView(info(context, getString(R.string.UpdateInfo)));
 

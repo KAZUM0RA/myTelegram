@@ -6961,6 +6961,9 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
     protected void onResume() {
         super.onResume();
         isResumed = true;
+        // Форк: тиха перевірка оновлень. Сама себе обмежує шістьма годинами,
+        // тож виклик на кожне повернення до застосунку нічого не коштує.
+        org.telegram.update.UpdateChecker.checkInBackground();
         pipActivityHandler.onResume();
         if (onResumeStaticCallback != null) {
             onResumeStaticCallback.run();
