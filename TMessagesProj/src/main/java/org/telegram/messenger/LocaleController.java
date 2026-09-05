@@ -1695,7 +1695,12 @@ public class LocaleController {
 
     public static String formatString(String key, String fallback, int res, int fallbackRes, Object... args) {
         try {
-            String value = BuildVars.USE_CLOUD_STRINGS ? getInstance().localeValues.get(key) : null;
+            // Форк: тут ОКРЕМИЙ похід у хмарні рядки, незалежний від
+            // getStringInternal(). Через це напис «Telegram для Android»
+            // лишався на місці навіть після додавання ключа до isAppNameKey:
+            // рядки з підстановкою йдуть саме сюди, а не туди.
+            String value = BuildVars.USE_CLOUD_STRINGS && !isAppNameKey(key)
+                    ? getInstance().localeValues.get(key) : null;
             if (value == null) {
                 if (BuildVars.USE_CLOUD_STRINGS && fallback != null) {
                     value = getInstance().localeValues.get(fallback);
@@ -1744,7 +1749,12 @@ public class LocaleController {
 
     public static CharSequence formatSpannable(String key, String fallback, int res, int fallbackRes, Object... args) {
         try {
-            String value = BuildVars.USE_CLOUD_STRINGS ? getInstance().localeValues.get(key) : null;
+            // Форк: третій незалежний похід у хмарні рядки, поруч із
+            // getStringInternal() і formatString(). Виняток потрібен у
+            // кожному — інакше назва форку пролізає назад там, де рядок
+            // дістають саме цим шляхом.
+            String value = BuildVars.USE_CLOUD_STRINGS && !isAppNameKey(key)
+                    ? getInstance().localeValues.get(key) : null;
             if (value == null) {
                 if (BuildVars.USE_CLOUD_STRINGS && fallback != null) {
                     value = getInstance().localeValues.get(fallback);
