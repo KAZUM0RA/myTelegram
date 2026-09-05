@@ -76,6 +76,16 @@ public class AppIconActivity extends BaseFragment {
 
             final ImageView preview = new ImageView(context);
             preview.setImageDrawable(previewOf(context, icon));
+            // Обрізаємо колом: на робочому столі пусковик робить те саме, а
+            // без цього в списку видно чорні кути зображення, яких там
+            // насправді не буде.
+            preview.setOutlineProvider(new android.view.ViewOutlineProvider() {
+                @Override
+                public void getOutline(View view, android.graphics.Outline outline) {
+                    outline.setOval(0, 0, view.getWidth(), view.getHeight());
+                }
+            });
+            preview.setClipToOutline(true);
             row.addView(preview, LayoutHelper.createLinear(40, 40, Gravity.CENTER_VERTICAL,
                     20, 8, 0, 8));
 
