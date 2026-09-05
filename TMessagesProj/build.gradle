@@ -139,6 +139,11 @@ android {
         buildConfigField "int", "TELEGRAM_APP_ID", getSecret("TELEGRAM_APP_ID", "0")
         buildConfigField "String", "TELEGRAM_APP_HASH", "\"" + getSecret("TELEGRAM_APP_HASH", "") + "\""
 
+        // Форк: короткий хеш коміта, з якого зібрано. За ним застосунок
+        // порівнює себе з релізом на GitHub — версія для цього не годиться,
+        // бо вона не змінюється між нашими збірками.
+        buildConfigField "String", "GIT_COMMIT", "\"" + gitCommit() + "\""
+
         // Форк: обмежуємо перелік ABI (див. TARGET_ABIS у gradle.properties).
         ndk {
             abiFilters.clear()
@@ -336,3 +341,21 @@ task checkVisibility {
 }
 
 preBuild.dependsOn checkVisibility
+
+// ── Форк: короткий хеш коміта для звіряння з релізом ─────────────────────
+// Береться з git; якщо git недоступний (розпакований архів, збірка не з
+// репозиторію) — порожній рядок, і перевірка оновлень просто мовчить,
+// замість того щоб падати.
+def gitCommit() {
+    try {
+        def out = new ByteArrayOutputStream()
+        exec {
+            commandLine 'git', 'rev-parse', '--short', 'HEAD'
+            standardOutput = out
+            errorOutput = new ByteArrayOutputStream()
+        }
+        return out.toString().trim()
+    } catch (Throwable ignored) {
+        return ""
+    }
+}

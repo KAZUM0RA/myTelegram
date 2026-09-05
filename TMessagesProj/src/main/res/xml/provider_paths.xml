@@ -4,4 +4,7 @@
     <files-path name="logs" path="/logs/"/>
     <files-path name="cache" path="/cache/"/>
     <root-path name="external_files" path="/storage/" />
+    <!-- Форк: сюди завантажується APK оновлення. Своя тека, щоб не залежати
+         від чужих шляхів вище, які апстрім може змінити. -->
+    <files-path name="updates" path="updates/"/>
 </paths>

@@ -704,6 +704,9 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         // Форк: словник написів. У підзаголовку — назва активного, щоб було
         // видно вибір без заходу всередину.
         items.add(SettingCell.Factory.of(901, IconBackgroundColors.ORANGE.top, IconBackgroundColors.ORANGE.bottom, R.drawable.settings_language, getString(R.string.WordPackTitle), currentWordPackName()));
+        // Форк: оновлення з релізів GitHub. Магазинів для неофіційної збірки
+        // немає, тож інакше про нову версію дізнатися нізвідки.
+        items.add(SettingCell.Factory.of(902, IconBackgroundColors.GREEN.top, IconBackgroundColors.GREEN.bottom, R.drawable.settings_devices, getString(R.string.UpdateTitle), org.telegram.update.UpdateChecker.currentCommit()));
 
         items.add(UItem.asShadow(null));
 
@@ -862,6 +865,9 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 break;
             case 901: // Форк: словник написів
                 presentSettingFragment(new WordPackActivity());
+                break;
+            case 902: // Форк: оновлення з GitHub
+                presentSettingFragment(new UpdateActivity());
                 break;
 
             case 11:
