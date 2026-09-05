@@ -30,6 +30,9 @@
     <string name="AiTranslateInsert">Insert</string>
     <string name="AiStateOn">on</string>
     <string name="AiStateNoKey">no key</string>
+    <string name="ConnectionServiceTitle">MyTelegram is connected</string>
+    <string name="ConnectionServiceText">Keeps a connection so messages arrive while the app is closed.</string>
+    <string name="ConnectionServiceChannel">Background connection</string>
     <string name="UpdateTitle">Updates</string>
     <string name="UpdateSectionBuild">Build</string>
     <string name="UpdateSectionAccess">Access</string>

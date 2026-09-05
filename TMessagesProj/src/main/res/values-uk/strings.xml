@@ -30,6 +30,9 @@
     <string name="AiTranslateInsert">Вставити</string>
     <string name="AiStateOn">увімкнено</string>
     <string name="AiStateNoKey">без ключа</string>
+    <string name="ConnectionServiceTitle">MyTelegram на звʼязку</string>
+    <string name="ConnectionServiceText">Тримає зʼєднання, щоб повідомлення приходили і коли застосунок закритий.</string>
+    <string name="ConnectionServiceChannel">Фонове зʼєднання</string>
     <string name="UpdateTitle">Оновлення</string>
     <string name="UpdateSectionBuild">Збірка</string>
     <string name="UpdateSectionAccess">Доступ</string>

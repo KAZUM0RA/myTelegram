@@ -50,6 +50,8 @@
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- Форк: потрібен для NotificationsService, див. коментар біля неї. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="android.permission.USE_FINGERPRINT" />
     <uses-permission android:name="android.permission.USE_BIOMETRIC" />
     <uses-permission android:name="android.permission.INSTALL_SHORTCUT" />
@@ -471,12 +473,21 @@
             android:exported="true"
             android:foregroundServiceType="mediaPlayback"
         />
+        <!-- Форк: тип змінено з dataSync на specialUse.
+             На Android 14+ служби типу dataSync обмежені шістьма годинами на
+             добу — для з'єднання месенджера, яке має жити постійно, це не
+             підходить. specialUse призначений саме для випадків, що не
+             вкладаються в готові типи; перевірка Google тут не потрібна, бо
+             збірка не поширюється через магазин. -->
         <service
             android:name=".NotificationsService"
             android:enabled="true"
             android:exported="true"
-            android:foregroundServiceType="dataSync"
-        />
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Постійне з'єднання з Telegram: push-сповіщення недоступні неофіційній збірці" />
+        </service>
         <service
             android:name=".NotificationRepeat"
             android:exported="false"

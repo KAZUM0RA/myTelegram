@@ -375,9 +375,21 @@ public class ApplicationLoader extends Application {
         }
         if (enabled) {
             try {
-                applicationContext.startService(new Intent(applicationContext, NotificationsService.class));
-            } catch (Throwable ignore) {
-
+                final Intent intent = new Intent(applicationContext, NotificationsService.class);
+                // Форк: саме startForegroundService, а не startService. Служба
+                // тепер переходить у передній план, і на Android 8+ звичайний
+                // запуск з фону система просто відхилила б.
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    applicationContext.startForegroundService(intent);
+                } else {
+                    applicationContext.startService(intent);
+                }
+            } catch (Throwable e) {
+                // Порожній catch тут раніше ховав будь-яку причину відмови —
+                // а причин на сучасному Android багато (заборона запуску з
+                // фону, ліміти). Хай хоч у логу буде видно.
+                FileLog.e("ApplicationLoader: не вдалося запустити службу з'єднання ("
+                        + e.getClass().getSimpleName() + ")");
             }
         } else {
             applicationContext.stopService(new Intent(applicationContext, NotificationsService.class));
