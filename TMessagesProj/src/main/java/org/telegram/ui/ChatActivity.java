@@ -1311,6 +1311,63 @@ public class ChatActivity extends BaseFragment implements
         return true;
     }
 
+    /**
+     * Оновлює кнопку швидких фраз у панелі вводу.
+     *
+     * <p>Беремо ПЕРШУ групу з місцем «у полі вводу»: панель вузька, і кілька
+     * значків там з'їли б місце під саму відправку. Решта груп лишаються
+     * плаваючими або в шапці.
+     */
+    private void updateQuickButtonsInputButton() {
+        if (chatActivityEnterView == null) {
+            return;
+        }
+        try {
+            for (final org.telegram.quickbuttons.QuickButtons.Group group
+                    : org.telegram.quickbuttons.QuickButtons.get(getDialogId())) {
+                if (group.buttons.isEmpty()
+                        || group.place != org.telegram.quickbuttons.QuickButtons.PLACE_INPUT) {
+                    continue;
+                }
+                int icon = R.drawable.msg_send;
+                if (!TextUtils.isEmpty(group.icon)) {
+                    final android.content.Context ctx = ApplicationLoader.applicationContext;
+                    final int id = ctx.getResources().getIdentifier(
+                            group.icon, "drawable", ctx.getPackageName());
+                    if (id != 0) {
+                        icon = id;
+                    }
+                }
+                chatActivityEnterView.setQuickButtonsInputButton(icon, group.name,
+                        () -> showQuickButtonGroup(group));
+                return;
+            }
+            chatActivityEnterView.setQuickButtonsInputButton(0, null, null);
+        } catch (Throwable e) {
+            FileLog.e("ChatActivity: не вдалося оновити кнопку швидких фраз");
+        }
+    }
+
+    /** Показує фрази групи або надсилає одразу, якщо режим прямий. */
+    private void showQuickButtonGroup(org.telegram.quickbuttons.QuickButtons.Group group) {
+        if (group.buttons.isEmpty() || getParentActivity() == null) {
+            return;
+        }
+        if (group.mode == org.telegram.quickbuttons.QuickButtons.MODE_DIRECT) {
+            applyQuickButton(group.buttons.get(0));
+            return;
+        }
+        final CharSequence[] names = new CharSequence[group.buttons.size()];
+        for (int i = 0; i < names.length; i++) {
+            names[i] = group.buttons.get(i).label;
+        }
+        new org.telegram.ui.ActionBar.AlertDialog.Builder(getParentActivity())
+                .setTitle(group.name)
+                .setItems(names, (dialog, which) -> applyQuickButton(group.buttons.get(which)))
+                .setNegativeButton(LocaleController.getString(R.string.Cancel), null)
+                .show();
+    }
+
     /** Спільна дія для всіх місць: надіслати фразу або покласти в поле. */
     private void applyQuickButton(org.telegram.quickbuttons.QuickButtons.Button button) {
         if (chatActivityEnterView == null) {
@@ -4121,6 +4178,7 @@ public class ChatActivity extends BaseFragment implements
                         if (quickButtonsFab != null) {
                             quickButtonsFab.refresh();
                         }
+                        updateQuickButtonsInputButton();
                     }));
                 } else if (id == call || id == video_call) {
                     if (currentUser != null && getParentActivity() != null) {
@@ -8244,6 +8302,7 @@ public class ChatActivity extends BaseFragment implements
         quickButtonsFab = new org.telegram.ui.Components.QuickButtonsFab(context);
         // Дія та сама, що й для кнопок у шапці, тож спільний метод.
         quickButtonsFab.bind(getDialogId(), this::applyQuickButton);
+        updateQuickButtonsInputButton();
         // MATCH_PARENT, а не WRAP_CONTENT: шар має покривати весь чат, бо
         // кнопки розставляються відносно нього. З WRAP_CONTENT він був
         // завширшки з саму кнопку, і вона опинялася в кутку під шапкою.

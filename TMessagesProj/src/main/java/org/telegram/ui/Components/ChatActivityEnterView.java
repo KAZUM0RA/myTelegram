@@ -661,6 +661,33 @@ public class ChatActivityEnterView extends FrameLayout implements
     private ImageView notifyButton;
     /** Форк: кнопка AI-перекладу тексту перед відправкою. */
     private ImageView aiTranslateButton;
+
+    /** Форк: кнопка швидких фраз у панелі вводу. */
+    private ImageView quickButtonsInputButton;
+    private Runnable quickButtonsInputListener;
+
+    /**
+     * Показує або ховає кнопку швидких фраз у панелі вводу.
+     *
+     * <p>Малює її ChatActivityEnterView, а вирішує ChatActivity: сама панель
+     * нічого не знає про групи фраз, і знати не повинна.
+     *
+     * @param icon     значок; {@code 0} — сховати кнопку
+     * @param onClick  що робити при натисканні
+     */
+    public void setQuickButtonsInputButton(int icon, CharSequence description, Runnable onClick) {
+        quickButtonsInputListener = onClick;
+        if (quickButtonsInputButton == null) {
+            return;
+        }
+        if (icon == 0) {
+            quickButtonsInputButton.setVisibility(GONE);
+            return;
+        }
+        quickButtonsInputButton.setImageResource(icon);
+        quickButtonsInputButton.setContentDescription(description);
+        quickButtonsInputButton.setVisibility(VISIBLE);
+    }
     @Nullable
     private ImageView scheduledButton;
     @Nullable
@@ -2784,6 +2811,26 @@ public class ChatActivityEnterView extends FrameLayout implements
             aiTranslateButton.setVisibility(GONE);
             messageEditTextContainer.addView(aiTranslateButton, LayoutHelper.createFrame(
                     DEFAULT_HEIGHT, DEFAULT_HEIGHT, Gravity.BOTTOM | Gravity.RIGHT, 0, 0, 0, 0));
+
+            // ── Форк: швидкі кнопки з місцем «у полі вводу» ───────────────
+            // Саме в attachLayout, на відміну від кнопки перекладу вище:
+            // ця панель ховається, щойно з'являється текст, і для заготовлених
+            // фраз це правильно — вони потрібні на ПОРОЖНЬОМУ полі, а коли
+            // вже щось написано, місце потрібніше під кнопку відправки.
+            quickButtonsInputButton = new ImageView(context);
+            quickButtonsInputButton.setScaleType(ImageView.ScaleType.CENTER);
+            quickButtonsInputButton.setColorFilter(new PorterDuffColorFilter(
+                    getThemedColor(Theme.key_glass_defaultIcon), PorterDuff.Mode.MULTIPLY));
+            quickButtonsInputButton.setBackground(
+                    Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector)));
+            quickButtonsInputButton.setVisibility(GONE);
+            attachLayout.addView(quickButtonsInputButton, 0,
+                    LayoutHelper.createLinear(DEFAULT_HEIGHT, DEFAULT_HEIGHT));
+            quickButtonsInputButton.setOnClickListener(v -> {
+                if (quickButtonsInputListener != null) {
+                    quickButtonsInputListener.run();
+                }
+            });
             aiTranslateButton.setOnClickListener(v -> {
                 if (parentFragment == null || messageEditText == null) {
                     return;
