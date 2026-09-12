@@ -90,8 +90,8 @@ public class QuickButtonsActivity extends BaseFragment {
         root.addView(info);
 
         // ── Вигляд самої кнопки ──────────────────────────────────────────
-        // Налаштування спільні для всіх чатів: це та сама кнопка, лише
-        // вміст списку різний.
+        // Для КОЖНОГО ЧАТУ окремо: з робочим чатом і з близькими потрібні
+        // різні кнопки. Спільним лишилося тільки положення.
         final org.telegram.ui.Cells.HeaderCell appearance =
                 new org.telegram.ui.Cells.HeaderCell(context);
         appearance.setText(getString(R.string.QuickButtonsAppearance));
@@ -101,9 +101,11 @@ public class QuickButtonsActivity extends BaseFragment {
         // Живий перегляд: без нього вибір кольору й розміру — гра наосліп.
         previewHolder = new FrameLayout(context);
         previewHolder.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+        previewHolder.setPadding(0, dp(14), 0, dp(14));
         preview = new org.telegram.ui.Components.QuickButtonsFab(context);
+        preview.bind(dialogId, null);
         previewHolder.addView(preview, LayoutHelper.createFrame(
-                QuickButtons.getSize(), QuickButtons.getSize(), Gravity.CENTER, 0, 16, 0, 16));
+                LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
         root.addView(previewHolder, LayoutHelper.createLinear(
                 LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
@@ -117,6 +119,16 @@ public class QuickButtonsActivity extends BaseFragment {
         root.addView(swatches, LayoutHelper.createLinear(
                 LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
         buildSwatches(context);
+
+        modeCell = new TextSettingsCell(context);
+        modeCell.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+        modeCell.setOnClickListener(v -> pickMode());
+        root.addView(modeCell);
+
+        styleCell = new TextSettingsCell(context);
+        styleCell.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+        styleCell.setOnClickListener(v -> pickStyle());
+        root.addView(styleCell);
 
         emojiCell = new TextSettingsCell(context);
         emojiCell.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
@@ -202,8 +214,11 @@ public class QuickButtonsActivity extends BaseFragment {
             sendNow[0] = !sendNow[0];
             sendCell.setChecked(sendNow[0]);
         });
+        // Без від'ємних відступів: у комірки є власні поля, і спроба
+        // компенсувати ними поля діалогу зрізала початок напису.
+        sendCell.setPadding(0, 0, 0, 0);
         container.addView(sendCell, LayoutHelper.createLinear(
-                LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, -24, 8, -24, 0));
+                LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 8, 0, 0));
 
         final AlertDialog.Builder builder = new AlertDialog.Builder(context);
         builder.setTitle(getString(existing == null
@@ -239,7 +254,81 @@ public class QuickButtonsActivity extends BaseFragment {
 
     // ── Вигляд кнопки ────────────────────────────────────────────────────
 
-    private TextSettingsCell emojiCell, sizeCell, alphaCell;
+    private TextSettingsCell emojiCell, sizeCell, alphaCell, modeCell, styleCell;
+
+    /** Назви готових значків у тому ж порядку, що {@link QuickButtons#ICONS}. */
+    private int[] iconTitles() {
+        return new int[]{
+                R.string.QuickButtonsEmojiNone, R.string.QuickButtonsIconFlash,
+                R.string.QuickButtonsIconChat, R.string.QuickButtonsIconStar,
+                R.string.QuickButtonsIconHeart, R.string.QuickButtonsIconWork,
+                R.string.QuickButtonsIconClock, R.string.QuickButtonsIconCheck,
+                R.string.QuickButtonsIconQuestion,
+        };
+    }
+
+    private void pickMode() {
+        final Context context = getParentActivity();
+        if (context == null) {
+            return;
+        }
+        final CharSequence[] names = {
+                getString(R.string.QuickButtonsModeSingle),
+                getString(R.string.QuickButtonsModeSeparate),
+        };
+        new AlertDialog.Builder(context)
+                .setTitle(getString(R.string.QuickButtonsMode))
+                .setItems(names, (dialog, which) -> {
+                    QuickButtons.setMode(dialogId, which);
+                    appearanceChanged();
+                })
+                .setNegativeButton(getString(R.string.Cancel), null)
+                .show();
+    }
+
+    private void pickStyle() {
+        final Context context = getParentActivity();
+        if (context == null) {
+            return;
+        }
+        final CharSequence[] names = {
+                getString(R.string.QuickButtonsStyleList),
+                getString(R.string.QuickButtonsStyleGrid),
+                getString(R.string.QuickButtonsStyleRow),
+        };
+        new AlertDialog.Builder(context)
+                .setTitle(getString(R.string.QuickButtonsStyle))
+                .setItems(names, (dialog, which) -> {
+                    QuickButtons.setStyle(dialogId, which);
+                    appearanceChanged();
+                })
+                .setNegativeButton(getString(R.string.Cancel), null)
+                .show();
+    }
+
+    private void pickReadyIcon() {
+        final Context context = getParentActivity();
+        if (context == null) {
+            return;
+        }
+        final int[] titles = iconTitles();
+        final CharSequence[] names = new CharSequence[titles.length];
+        for (int i = 0; i < titles.length; i++) {
+            names[i] = getString(titles[i]);
+        }
+        new AlertDialog.Builder(context)
+                .setTitle(getString(R.string.QuickButtonsIconReady))
+                .setItems(names, (dialog, which) -> {
+                    // Готовий значок виключає емодзі й картинку — інакше
+                    // довелося б мовчки вирішувати, що з них головніше.
+                    QuickButtons.setEmoji(dialogId, "");
+                    QuickButtons.clearImage(dialogId);
+                    QuickButtons.setIcon(dialogId, QuickButtons.ICONS[which]);
+                    appearanceChanged();
+                })
+                .setNegativeButton(getString(R.string.Cancel), null)
+                .show();
+    }
     private FrameLayout previewHolder;
     private org.telegram.ui.Components.QuickButtonsFab preview;
     private LinearLayout swatches;
@@ -247,7 +336,7 @@ public class QuickButtonsActivity extends BaseFragment {
     /** Кружечки палітри. Обраний позначаємо обідком. */
     private void buildSwatches(Context context) {
         swatches.removeAllViews();
-        final int active = QuickButtons.getColor();
+        final int active = QuickButtons.getColor(dialogId);
         for (int color : QuickButtons.COLORS) {
             final View dot = new View(context);
             final int shown = color == QuickButtons.COLOR_THEME
@@ -258,7 +347,7 @@ public class QuickButtonsActivity extends BaseFragment {
                 dot.setScaleY(1.25f);
             }
             dot.setOnClickListener(v -> {
-                QuickButtons.setColor(color);
+                QuickButtons.setColor(dialogId, color);
                 buildSwatches(context);
                 appearanceChanged();
             });
@@ -273,22 +362,40 @@ public class QuickButtonsActivity extends BaseFragment {
         if (preview != null) {
             preview.refresh();
             preview.setVisibility(View.VISIBLE);
-            final android.view.ViewGroup.LayoutParams lp = preview.getLayoutParams();
-            if (lp != null) {
-                lp.width = dp(QuickButtons.getSize());
-                lp.height = dp(QuickButtons.getSize());
-                preview.setLayoutParams(lp);
-            }
         }
-        final String emoji = QuickButtons.getEmoji();
-        emojiCell.setTextAndValue(getString(R.string.QuickButtonsEmoji),
-                QuickButtons.getImage() != null ? getString(R.string.QuickButtonsImageOwn)
-                        : TextUtils.isEmpty(emoji) ? getString(R.string.QuickButtonsEmojiNone) : emoji,
-                true);
+        final String emoji = QuickButtons.getEmoji(dialogId);
+        final String iconName = QuickButtons.getIcon(dialogId);
+        final CharSequence iconValue;
+        if (QuickButtons.getImage(dialogId) != null) {
+            iconValue = getString(R.string.QuickButtonsImageOwn);
+        } else if (!TextUtils.isEmpty(emoji)) {
+            iconValue = emoji;
+        } else {
+            int index = 0;
+            for (int i = 0; i < QuickButtons.ICONS.length; i++) {
+                if (QuickButtons.ICONS[i].equals(iconName)) {
+                    index = i;
+                    break;
+                }
+            }
+            iconValue = getString(iconTitles()[index]);
+        }
+        emojiCell.setTextAndValue(getString(R.string.QuickButtonsEmoji), iconValue, true);
+
+        modeCell.setTextAndValue(getString(R.string.QuickButtonsMode),
+                getString(QuickButtons.getMode(dialogId) == QuickButtons.MODE_SEPARATE
+                        ? R.string.QuickButtonsModeSeparate : R.string.QuickButtonsModeSingle), true);
+        final int style = QuickButtons.getStyle(dialogId);
+        styleCell.setTextAndValue(getString(R.string.QuickButtonsStyle),
+                getString(style == QuickButtons.STYLE_GRID ? R.string.QuickButtonsStyleGrid
+                        : style == QuickButtons.STYLE_ROW ? R.string.QuickButtonsStyleRow
+                        : R.string.QuickButtonsStyleList), true);
+        // У режимі «кнопки поруч» списку немає, тож і вигляд його ні до чого.
+        styleCell.setEnabled(QuickButtons.getMode(dialogId) == QuickButtons.MODE_SINGLE);
         sizeCell.setTextAndValue(getString(R.string.QuickButtonsSize),
-                QuickButtons.getSize() + " dp", true);
+                QuickButtons.getSize(dialogId) + " dp", true);
         alphaCell.setTextAndValue(getString(R.string.QuickButtonsAlpha),
-                QuickButtons.getAlphaPercent() + "%", false);
+                QuickButtons.getAlphaPercent(dialogId) + "%", false);
     }
 
     /** Вибір значка: типовий, емодзі або власна картинка. */
@@ -298,7 +405,7 @@ public class QuickButtonsActivity extends BaseFragment {
             return;
         }
         final CharSequence[] options = {
-                getString(R.string.QuickButtonsEmojiNone),
+                getString(R.string.QuickButtonsIconReady),
                 getString(R.string.QuickButtonsEmoji),
                 getString(R.string.QuickButtonsImageOwn),
         };
@@ -306,9 +413,7 @@ public class QuickButtonsActivity extends BaseFragment {
                 .setTitle(getString(R.string.QuickButtonsEmoji))
                 .setItems(options, (dialog, which) -> {
                     if (which == 0) {
-                        QuickButtons.setEmoji("");
-                        QuickButtons.clearImage();
-                        appearanceChanged();
+                        pickReadyIcon();
                     } else if (which == 1) {
                         askEmoji();
                     } else {
@@ -326,7 +431,7 @@ public class QuickButtonsActivity extends BaseFragment {
         }
         final EditTextBoldCursor editText = field(context,
                 getString(R.string.QuickButtonsEmojiHint), false);
-        editText.setText(QuickButtons.getEmoji());
+        editText.setText(QuickButtons.getEmoji(dialogId));
         final LinearLayout container = new LinearLayout(context);
         container.setPadding(dp(24), dp(6), dp(24), 0);
         container.addView(editText, LayoutHelper.createLinear(
@@ -338,8 +443,8 @@ public class QuickButtonsActivity extends BaseFragment {
                 .setPositiveButton(getString(R.string.Save), (dialog, which) -> {
                     // Емодзі й картинка виключають одне одного: лишити обидва
                     // означало б мовчазне правило «картинка головніша».
-                    QuickButtons.clearImage();
-                    QuickButtons.setEmoji(editText.getText().toString());
+                    QuickButtons.clearImage(dialogId);
+                    QuickButtons.setEmoji(dialogId, editText.getText().toString());
                     appearanceChanged();
                 })
                 .setNegativeButton(getString(R.string.Cancel), null)
@@ -368,8 +473,8 @@ public class QuickButtonsActivity extends BaseFragment {
         if (resultCode != android.app.Activity.RESULT_OK || data == null || data.getData() == null) {
             return;
         }
-        if (QuickButtons.setImage(data.getData())) {
-            QuickButtons.setEmoji("");
+        if (QuickButtons.setImage(dialogId, data.getData())) {
+            QuickButtons.setEmoji(dialogId, "");
             appearanceChanged();
         } else {
             BulletinFactory.of(this)
@@ -394,9 +499,9 @@ public class QuickButtonsActivity extends BaseFragment {
                 .setTitle(getString(size ? R.string.QuickButtonsSize : R.string.QuickButtonsAlpha))
                 .setItems(names, (dialog, which) -> {
                     if (size) {
-                        QuickButtons.setSize(values[which]);
+                        QuickButtons.setSize(dialogId, values[which]);
                     } else {
-                        QuickButtons.setAlphaPercent(values[which]);
+                        QuickButtons.setAlphaPercent(dialogId, values[which]);
                     }
                     appearanceChanged();
                 })

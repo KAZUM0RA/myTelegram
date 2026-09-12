@@ -137,74 +137,134 @@ public final class QuickButtons {
     public static void savePosition(float x, float y) {
         prefs().edit().putFloat(PREF_POSITION_X, x).putFloat(PREF_POSITION_Y, y).apply();
     }
-
     // ── Вигляд кнопки ────────────────────────────────────────────────────
     //
-    // Налаштування спільні для всіх чатів: це та сама кнопка, лише вміст
-    // списку різний. Мати в кожному чаті свій колір означало б плутанину.
+    // Усе нижче — ДЛЯ КОЖНОГО ЧАТУ ОКРЕМО. Спершу було спільним, але з
+    // робочим чатом і чатом із близькими потрібні різні кнопки: інший колір,
+    // інший значок, іноді й інший режим. Спільним лишилося тільки положення:
+    // рука шукає кнопку на одному місці незалежно від того, хто на тому боці.
 
     private static final String PREF_COLOR = "color";
     private static final String PREF_EMOJI = "emoji";
     private static final String PREF_SIZE = "size";
     private static final String PREF_ALPHA = "alpha";
+    private static final String PREF_ICON = "icon";
+    private static final String PREF_MODE = "mode";
+    private static final String PREF_STYLE = "style";
+
+    private static String k(long dialogId, String name) {
+        return "d" + dialogId + "_" + name;
+    }
 
     /** Нуль означає «як у темі» — колір підхоплюється з оформлення чату. */
     public static final int COLOR_THEME = 0;
 
-    /** Палітра для вибору. Перший запис — колір теми. */
     public static final int[] COLORS = {
             COLOR_THEME,
             0xFF4E8FE0, 0xFF6D3A5D, 0xFF2F6B45,
             0xFFB4531F, 0xFFA32C22, 0xFF394049,
     };
 
-    public static int getColor() {
-        return prefs().getInt(PREF_COLOR, COLOR_THEME);
+    public static int getColor(long dialogId) {
+        return prefs().getInt(k(dialogId, PREF_COLOR), COLOR_THEME);
     }
 
-    public static void setColor(int color) {
-        prefs().edit().putInt(PREF_COLOR, color).apply();
+    public static void setColor(long dialogId, int color) {
+        prefs().edit().putInt(k(dialogId, PREF_COLOR), color).apply();
     }
 
-    /** Порожній рядок — показуємо типовий значок замість емодзі. */
-    public static String getEmoji() {
-        return prefs().getString(PREF_EMOJI, "");
+    // ── Режим панелі ─────────────────────────────────────────────────────
+
+    /** Одна кнопка, яка відкриває список. */
+    public static final int MODE_SINGLE = 0;
+    /** Кнопки розкладені поруч, без проміжного дотику. */
+    public static final int MODE_SEPARATE = 1;
+
+    public static int getMode(long dialogId) {
+        return prefs().getInt(k(dialogId, PREF_MODE), MODE_SINGLE);
     }
 
-    public static void setEmoji(String emoji) {
-        prefs().edit().putString(PREF_EMOJI, emoji == null ? "" : emoji.trim()).apply();
+    public static void setMode(long dialogId, int mode) {
+        prefs().edit().putInt(k(dialogId, PREF_MODE), mode).apply();
+    }
+
+    // ── Вигляд списку ────────────────────────────────────────────────────
+
+    public static final int STYLE_LIST = 0;
+    public static final int STYLE_GRID = 1;
+    public static final int STYLE_ROW = 2;
+
+    public static int getStyle(long dialogId) {
+        return prefs().getInt(k(dialogId, PREF_STYLE), STYLE_LIST);
+    }
+
+    public static void setStyle(long dialogId, int style) {
+        prefs().edit().putInt(k(dialogId, PREF_STYLE), style).apply();
+    }
+
+    // ── Значок ───────────────────────────────────────────────────────────
+
+    /**
+     * Готові значки під різні задачі. Порожній рядок — типова стрілка.
+     *
+     * <p>Векторні й одноколірні: кнопка фарбується під обраний колір, тож
+     * значок має бути силуетом, інакше на кольоровому тлі виглядав би чужим.
+     */
+    public static final String[] ICONS = {
+            "", "qb_flash", "qb_chat", "qb_star",
+            "qb_heart", "qb_work", "qb_clock", "qb_check", "qb_question",
+    };
+
+    public static String getIcon(long dialogId) {
+        return prefs().getString(k(dialogId, PREF_ICON), "");
+    }
+
+    public static void setIcon(long dialogId, String icon) {
+        prefs().edit().putString(k(dialogId, PREF_ICON), icon == null ? "" : icon).apply();
+    }
+
+    /** Порожній рядок — значок не емодзі. */
+    public static String getEmoji(long dialogId) {
+        return prefs().getString(k(dialogId, PREF_EMOJI), "");
+    }
+
+    public static void setEmoji(long dialogId, String emoji) {
+        prefs().edit().putString(k(dialogId, PREF_EMOJI), emoji == null ? "" : emoji.trim()).apply();
     }
 
     /** Діаметр у dp. Обмежений знизу, щоб у кнопку можна було влучити. */
-    public static int getSize() {
-        return Math.max(36, Math.min(prefs().getInt(PREF_SIZE, 44), 72));
+    public static int getSize(long dialogId) {
+        return Math.max(36, Math.min(prefs().getInt(k(dialogId, PREF_SIZE), 44), 72));
     }
 
-    public static void setSize(int dp) {
-        prefs().edit().putInt(PREF_SIZE, dp).apply();
+    public static void setSize(long dialogId, int dp) {
+        prefs().edit().putInt(k(dialogId, PREF_SIZE), dp).apply();
     }
 
     /**
      * Непрозорість у відсотках. Нижче сорока не пускаємо: напівневидиму
      * кнопку неможливо знайти, і це виглядало б як зникла функція.
      */
-    public static int getAlphaPercent() {
-        return Math.max(40, Math.min(prefs().getInt(PREF_ALPHA, 100), 100));
+    public static int getAlphaPercent(long dialogId) {
+        return Math.max(40, Math.min(prefs().getInt(k(dialogId, PREF_ALPHA), 100), 100));
     }
 
-    public static void setAlphaPercent(int percent) {
-        prefs().edit().putInt(PREF_ALPHA, percent).apply();
+    public static void setAlphaPercent(long dialogId, int percent) {
+        prefs().edit().putInt(k(dialogId, PREF_ALPHA), percent).apply();
     }
 
     // ── Власна картинка ──────────────────────────────────────────────────
+    //
+    // Теж для кожного чату: файл названо за діалогом.
 
-    private static final String IMAGE_NAME = "quickbutton.png";
+    private static java.io.File imageFile(long dialogId) {
+        return new java.io.File(ApplicationLoader.getFilesDirFixed(),
+                "quickbutton_" + dialogId + ".png");
+    }
 
-    /** Файл із власним значком або {@code null}, якщо його не задано. */
-    public static java.io.File getImage() {
+    public static java.io.File getImage(long dialogId) {
         try {
-            final java.io.File file = new java.io.File(
-                    ApplicationLoader.getFilesDirFixed(), IMAGE_NAME);
+            final java.io.File file = imageFile(dialogId);
             return file.exists() && file.length() > 0 ? file : null;
         } catch (Throwable e) {
             return null;
@@ -218,7 +278,7 @@ public final class QuickButtons {
      * втратити будь-коли — користувач видалить фото, система відкличе дозвіл,
      * і кнопка лишиться без значка без жодного пояснення.
      */
-    public static boolean setImage(android.net.Uri uri) {
+    public static boolean setImage(long dialogId, android.net.Uri uri) {
         java.io.InputStream in = null;
         java.io.OutputStream out = null;
         try {
@@ -230,13 +290,12 @@ public final class QuickButtons {
             if (source == null) {
                 return false;
             }
-            // Зменшуємо до 144 пікселів: більше за найбільший розмір кнопки,
-            // і не тягне зайвих мегабайтів у пам'ять на кожному відкритті чату.
+            // 144 пікселі: більше за найбільший розмір кнопки, і не тягне
+            // зайвих мегабайтів у пам'ять на кожному відкритті чату.
             final int side = 144;
             final android.graphics.Bitmap scaled =
                     android.graphics.Bitmap.createScaledBitmap(source, side, side, true);
-            out = new java.io.FileOutputStream(
-                    new java.io.File(ApplicationLoader.getFilesDirFixed(), IMAGE_NAME));
+            out = new java.io.FileOutputStream(imageFile(dialogId));
             scaled.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, out);
             if (scaled != source) {
                 scaled.recycle();
@@ -252,9 +311,9 @@ public final class QuickButtons {
         }
     }
 
-    public static void clearImage() {
+    public static void clearImage(long dialogId) {
         try {
-            final java.io.File file = getImage();
+            final java.io.File file = getImage(dialogId);
             if (file != null) {
                 file.delete();
             }

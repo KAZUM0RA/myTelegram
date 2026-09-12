@@ -8168,7 +8168,8 @@ public class ChatActivity extends BaseFragment implements
             }
         });
         contentView.addView(quickButtonsFab, LayoutHelper.createFrame(
-                QuickButtons.getSize(), QuickButtons.getSize(), Gravity.LEFT | Gravity.TOP));
+                LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT,
+                Gravity.LEFT | Gravity.TOP));
 
         int chatListIndex = contentView.indexOfChild(chatListView);
         chatListIndex = chatListIndex < 0 ? contentView.getChildCount() : (chatListIndex + 1);
