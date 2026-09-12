@@ -136,6 +136,7 @@ import com.google.zxing.common.detector.MathUtils;
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.quickbuttons.QuickButtons;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BotForumHelper;
 import org.telegram.messenger.BotInlineKeyboard;
@@ -1692,6 +1693,10 @@ public class ChatActivity extends BaseFragment implements
     private final static int ai_autotranslate = 900;
     /** Форк: підсумок переписки. */
     private final static int ai_summary = 901;
+    /** Форк: налаштування швидких кнопок цього чату. */
+    private final static int quick_buttons = 902;
+    /** Форк: плаваюча кнопка швидких фраз. */
+    private org.telegram.ui.Components.QuickButtonsFab quickButtonsFab;
     private final static int scheduled = 63;
     private final static int edit_quick_reply = 64;
 
@@ -4023,6 +4028,12 @@ public class ChatActivity extends BaseFragment implements
                     checkTranslation(true);
                 } else if (id == ai_summary) {
                     org.telegram.ai.AiAssistUi.summarize(ChatActivity.this, messages);
+                } else if (id == quick_buttons) {
+                    presentFragment(new QuickButtonsActivity(getDialogId(), () -> {
+                        if (quickButtonsFab != null) {
+                            quickButtonsFab.refresh();
+                        }
+                    }));
                 } else if (id == call || id == video_call) {
                     if (currentUser != null && getParentActivity() != null) {
                         VoIPHelper.startCall(currentUser, id == video_call, userInfo != null && userInfo.video_calls_available, getParentActivity(), getMessagesController().getUserFull(currentUser.id), getAccountInstance());
@@ -4480,6 +4491,9 @@ public class ChatActivity extends BaseFragment implements
             // функції власним двигуном.
             aiAutoTranslateItem = headerItem.lazilyAddSubItem(ai_autotranslate, R.drawable.outline_ai_translate2, LocaleController.getString(R.string.AiAutoTranslate));
             aiSummaryItem = headerItem.lazilyAddSubItem(ai_summary, R.drawable.msg_list, LocaleController.getString(R.string.AiSummary));
+            // Форк: тут лише НАЛАШТУВАННЯ кнопок. Користуються ними з
+            // плаваючої кнопки в чаті, а не звідси.
+            headerItem.lazilyAddSubItem(quick_buttons, R.drawable.msg_message, LocaleController.getString(R.string.QuickButtonsTitle));
             updateAiAutoTranslateItem();
             if (currentChat != null && !currentChat.creator && !ChatObject.hasAdminRights(currentChat)) {
                 headerItem.lazilyAddSubItem(report, R.drawable.msg_report, LocaleController.getString(R.string.ReportChat));
@@ -8132,6 +8146,29 @@ public class ChatActivity extends BaseFragment implements
         checkSendButtonBlockedByTyping(false);
 
         chatInputBubbleContainer.addView(chatActivityEnterView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.BOTTOM, 7, 0, 7, 0));
+
+        // ── Форк: плаваюча кнопка швидких фраз ───────────────────────────
+        // Додаємо в contentView, а не в контейнер поля вводу: кнопку можна
+        // перетягнути куди завгодно, тож їй потрібна вся площа чату.
+        quickButtonsFab = new org.telegram.ui.Components.QuickButtonsFab(context);
+        quickButtonsFab.bind(getDialogId(), button -> {
+            if (chatActivityEnterView == null) {
+                return;
+            }
+            if (button.sendNow) {
+                chatActivityEnterView.setFieldText(button.text);
+                chatActivityEnterView.sendMessage();
+            } else {
+                // Не затираємо набране: дописуємо до нього. Інакше кнопка
+                // зжерла б half-написану думку, і це було б неприємно.
+                final CharSequence current = chatActivityEnterView.getFieldText();
+                chatActivityEnterView.setFieldText(
+                        android.text.TextUtils.isEmpty(current)
+                                ? button.text : current + " " + button.text);
+            }
+        });
+        contentView.addView(quickButtonsFab, LayoutHelper.createFrame(
+                QuickButtons.getSize(), QuickButtons.getSize(), Gravity.LEFT | Gravity.TOP));
 
         int chatListIndex = contentView.indexOfChild(chatListView);
         chatListIndex = chatListIndex < 0 ? contentView.getChildCount() : (chatListIndex + 1);
