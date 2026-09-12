@@ -34,6 +34,8 @@
     <string name="ConnectionServiceText">Тримає зʼєднання, щоб повідомлення приходили і коли застосунок закритий.</string>
     <string name="ConnectionServiceChannel">Фонове зʼєднання</string>
     <string name="TelegramVersion">MyTelegram — неофіційний форк %1$s</string>
+    <string name="SaveToSavedMessages">Зберегти в «Збережене»</string>
+    <string name="SavedToSavedMessages">Збережено</string>
     <string name="AppIconTitle">Іконка застосунку</string>
     <string name="AppIconForkAmethyst">Аметист</string>
     <string name="AppIconForkEmerald">Смарагд</string>

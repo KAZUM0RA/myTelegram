@@ -1238,6 +1238,8 @@ public class ChatActivity extends BaseFragment implements
     public final static int OPTION_AI_REPLY = 901;
     /** Форк: розпізнавання голосового. */
     public final static int OPTION_AI_VOICE = 902;
+    /** Форк: зберегти повідомлення в «Збережене» одним дотиком. */
+    public final static int OPTION_SAVE_TO_SAVED = 903;
     public final static int OPTION_TRANSCRIBE = 30;
     public final static int OPTION_HIDE_SPONSORED_MESSAGE = 31;
     public final static int OPTION_VIEW_IN_TOPIC = 32;
@@ -33455,6 +33457,30 @@ public class ChatActivity extends BaseFragment implements
                 break;
             }
             // Форк: чернетка відповіді на вибране повідомлення.
+            // Форк: зберегти повідомлення в «Збережене».
+            case OPTION_SAVE_TO_SAVED: {
+                if (selectedObject != null) {
+                    final ArrayList<MessageObject> toSave = new ArrayList<>();
+                    // Якщо це альбом — зберігаємо його цілком. Одна картинка
+                    // з групи без решти зазвичай не те, чого хочуть.
+                    if (selectedObjectGroup != null && selectedObjectGroup.messages != null
+                            && !selectedObjectGroup.messages.isEmpty()) {
+                        toSave.addAll(selectedObjectGroup.messages);
+                    } else {
+                        toSave.add(selectedObject);
+                    }
+                    final long selfId = getUserConfig().getClientUserId();
+                    SendMessagesHelper.getInstance(currentAccount).sendMessage(
+                            toSave, selfId, false, false, true, 0, 0, null, -1, 0, 0, null);
+                    // Показуємо той самий значок, що й Telegram після
+                    // пересилання, щоб дія не виглядала беззвітною.
+                    BulletinFactory.of(ChatActivity.this)
+                            .createSimpleBulletin(R.raw.saved_messages,
+                                    LocaleController.getString(R.string.SavedToSavedMessages))
+                            .show();
+                }
+                break;
+            }
             case OPTION_AI_REPLY: {
                 if (selectedObject != null) {
                     final MessageObject replyTo = selectedObject;
@@ -45938,6 +45964,17 @@ public class ChatActivity extends BaseFragment implements
                         icons.add(R.drawable.outline_ai_translate2);
                     }
                 }
+                // Форк: зберегти в «Збережене» одним дотиком.
+                // Власна умова, як і решта наших пунктів: єдине, що тут
+                // потрібно, — щоб повідомлення взагалі можна було переслати.
+                // У власному «Збереженому» пункт не показуємо: пересилати
+                // повідомлення самому собі туди, де воно вже лежить, — безглуздо.
+                if (selectedObject != null && selectedObject.canForwardMessage()
+                        && getDialogId() != getUserConfig().getClientUserId()) {
+                    items.add(LocaleController.getString(R.string.SaveToSavedMessages));
+                    options.add(OPTION_SAVE_TO_SAVED);
+                    icons.add(R.drawable.msg_saved);
+                }
                 // Форк: чернетка відповіді — теж ОКРЕМА умова.
                 // Всередині блоку «Перекласти» цей пункт з'являвся лише для
                 // іншомовних повідомлень: Telegram ховає весь той блок, коли
@@ -46323,6 +46360,17 @@ public class ChatActivity extends BaseFragment implements
                         options.add(OPTION_AI_TRANSLATE);
                         icons.add(R.drawable.outline_ai_translate2);
                     }
+                }
+                // Форк: зберегти в «Збережене» одним дотиком.
+                // Власна умова, як і решта наших пунктів: єдине, що тут
+                // потрібно, — щоб повідомлення взагалі можна було переслати.
+                // У власному «Збереженому» пункт не показуємо: пересилати
+                // повідомлення самому собі туди, де воно вже лежить, — безглуздо.
+                if (selectedObject != null && selectedObject.canForwardMessage()
+                        && getDialogId() != getUserConfig().getClientUserId()) {
+                    items.add(LocaleController.getString(R.string.SaveToSavedMessages));
+                    options.add(OPTION_SAVE_TO_SAVED);
+                    icons.add(R.drawable.msg_saved);
                 }
                 // Форк: чернетка відповіді — теж ОКРЕМА умова.
                 // Всередині блоку «Перекласти» цей пункт з'являвся лише для

@@ -33,6 +33,8 @@
     <string name="ConnectionServiceTitle">MyTelegram is connected</string>
     <string name="ConnectionServiceText">Keeps a connection so messages arrive while the app is closed.</string>
     <string name="ConnectionServiceChannel">Background connection</string>
+    <string name="SaveToSavedMessages">Save to Saved Messages</string>
+    <string name="SavedToSavedMessages">Saved</string>
     <string name="AppIconTitle">App icon</string>
     <string name="AppIconForkAmethyst">Amethyst</string>
     <string name="AppIconForkEmerald">Emerald</string>
