@@ -79,6 +79,11 @@
     <string name="QuickButtonsPlaceHeader">In the chat header</string>
     <string name="QuickButtonsPlaceInput">Above the input field</string>
     <string name="QuickButtonsPlaceHeaderHint">The icon will appear next time you open the chat.</string>
+    <string name="QuickButtonsAction">On tap</string>
+    <string name="QuickButtonsActionSend">Send the text</string>
+    <string name="QuickButtonsActionInsert">Put it in the input field</string>
+    <string name="QuickButtonsActionLink">Open a link</string>
+    <string name="QuickButtonsLinkHint">Link, e.g. https://t.me/bot/app</string>
     <string name="QuickButtonsColor">Colour</string>
     <string name="QuickButtonsColorTheme">As in theme</string>
     <string name="QuickButtonsColorOwn">Own colour</string>

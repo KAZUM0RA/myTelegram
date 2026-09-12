@@ -82,6 +82,11 @@
     <string name="QuickButtonsPlaceHeader">У шапці чату</string>
     <string name="QuickButtonsPlaceInput">Над полем вводу</string>
     <string name="QuickButtonsPlaceHeaderHint">Значок зʼявиться, коли наступного разу відкриєш чат.</string>
+    <string name="QuickButtonsAction">При натисканні</string>
+    <string name="QuickButtonsActionSend">Надіслати текст</string>
+    <string name="QuickButtonsActionInsert">Покласти в поле вводу</string>
+    <string name="QuickButtonsActionLink">Відкрити посилання</string>
+    <string name="QuickButtonsLinkHint">Посилання, напр. https://t.me/bot/app</string>
     <string name="QuickButtonsColor">Колір</string>
     <string name="QuickButtonsColorTheme">Як у темі</string>
     <string name="QuickButtonsColorOwn">Власний</string>

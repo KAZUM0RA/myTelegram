@@ -227,6 +227,17 @@ public class QuickButtonGroupActivity extends BaseFragment {
         alphaCell.setTextAndValue(getString(R.string.QuickButtonsAlpha), group.alpha + "%", false);
     }
 
+    private String actionName(int action) {
+        switch (action) {
+            case QuickButtons.ACTION_INSERT:
+                return getString(R.string.QuickButtonsActionInsert);
+            case QuickButtons.ACTION_LINK:
+                return getString(R.string.QuickButtonsActionLink);
+            default:
+                return getString(R.string.QuickButtonsActionSend);
+        }
+    }
+
     private String placeName() {
         switch (group.place) {
             case QuickButtons.PLACE_HEADER:
@@ -328,17 +339,35 @@ public class QuickButtonGroupActivity extends BaseFragment {
         container.addView(textField, LayoutHelper.createLinear(
                 LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 12, 0, 0));
 
-        final TextCheckCell sendCell = new TextCheckCell(context);
-        sendCell.setBackgroundColor(Theme.getColor(Theme.key_dialogBackground));
-        sendCell.setPadding(0, 0, 0, 0);
-        final boolean[] sendNow = { existing == null || existing.sendNow };
-        sendCell.setTextAndCheck(getString(R.string.QuickButtonsSendNow), sendNow[0], false);
-        sendCell.setOnClickListener(v -> {
-            sendNow[0] = !sendNow[0];
-            sendCell.setChecked(sendNow[0]);
+        // Три дії замість колишнього перемикача: посилання не вкладалося в
+        // «надіслати чи вставити» — воно взагалі не про текст повідомлення.
+        final int[] action = { existing == null ? QuickButtons.ACTION_SEND : existing.action };
+        final TextSettingsCell actionCell = new TextSettingsCell(context);
+        actionCell.setBackgroundColor(Theme.getColor(Theme.key_dialogBackground));
+        actionCell.setPadding(0, 0, 0, 0);
+        actionCell.setTextAndValue(getString(R.string.QuickButtonsAction),
+                actionName(action[0]), false);
+        actionCell.setOnClickListener(v -> {
+            final CharSequence[] names = {
+                    getString(R.string.QuickButtonsActionSend),
+                    getString(R.string.QuickButtonsActionInsert),
+                    getString(R.string.QuickButtonsActionLink),
+            };
+            chooser(getString(R.string.QuickButtonsAction), names, which -> {
+                action[0] = which;
+                actionCell.setTextAndValue(getString(R.string.QuickButtonsAction),
+                        actionName(which), false);
+                // Підказка поля змінюється разом із дією: для посилання
+                // «текст, який надсилати» збивало б з пантелику.
+                textField.setHintText(getString(which == QuickButtons.ACTION_LINK
+                        ? R.string.QuickButtonsLinkHint : R.string.QuickButtonsTextHint));
+            });
         });
-        container.addView(sendCell, LayoutHelper.createLinear(
+        container.addView(actionCell, LayoutHelper.createLinear(
                 LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 8, 0, 0));
+        if (existing != null && existing.action == QuickButtons.ACTION_LINK) {
+            textField.setHintText(getString(R.string.QuickButtonsLinkHint));
+        }
 
         final AlertDialog.Builder builder = new AlertDialog.Builder(context);
         builder.setTitle(getString(existing == null
@@ -352,11 +381,11 @@ public class QuickButtonGroupActivity extends BaseFragment {
             }
             final String finalLabel = TextUtils.isEmpty(label) ? shorten(text) : label;
             if (existing == null) {
-                group.buttons.add(new QuickButtons.Button(finalLabel, text, sendNow[0]));
+                group.buttons.add(new QuickButtons.Button(finalLabel, text, action[0]));
             } else {
                 existing.label = finalLabel;
                 existing.text = text;
-                existing.sendNow = sendNow[0];
+                existing.action = action[0];
             }
             persist();
         });

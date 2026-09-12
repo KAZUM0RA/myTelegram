@@ -1368,12 +1368,20 @@ public class ChatActivity extends BaseFragment implements
                 .show();
     }
 
-    /** Спільна дія для всіх місць: надіслати фразу або покласти в поле. */
+    /** Спільна дія для всіх місць: надіслати, вставити або відкрити. */
     private void applyQuickButton(org.telegram.quickbuttons.QuickButtons.Button button) {
+        if (button.action == org.telegram.quickbuttons.QuickButtons.ACTION_LINK) {
+            // Browser.openUrl сам розпізнає посилання Telegram і відкриє
+            // бота чи міні-застосунок усередині, а не в браузері.
+            if (getParentActivity() != null) {
+                Browser.openUrl(getParentActivity(), button.text);
+            }
+            return;
+        }
         if (chatActivityEnterView == null) {
             return;
         }
-        if (button.sendNow) {
+        if (button.action == org.telegram.quickbuttons.QuickButtons.ACTION_SEND) {
             chatActivityEnterView.setFieldText(button.text);
             chatActivityEnterView.sendMessage();
         } else {

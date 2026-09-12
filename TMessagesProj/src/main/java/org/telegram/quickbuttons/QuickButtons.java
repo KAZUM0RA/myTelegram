@@ -45,20 +45,33 @@ public final class QuickButtons {
 
     // ── Моделі ───────────────────────────────────────────────────────────
 
+    /** Надіслати текст одразу. */
+    public static final int ACTION_SEND = 0;
+    /** Покласти текст у поле вводу, щоб дописати. */
+    public static final int ACTION_INSERT = 1;
+    /**
+     * Відкрити посилання.
+     *
+     * <p>Для адрес t.me Telegram розпізнає свої посилання сам і відкриває
+     * бота чи міні-застосунок усередині, а не в браузері.
+     */
+    public static final int ACTION_LINK = 2;
+
     public static final class Button {
         public String label;
+        /** Текст повідомлення або адреса — залежно від {@link #action}. */
         public String text;
         /**
-         * {@code true} — надіслати одразу, {@code false} — покласти в поле
-         * вводу. Вибір для кожної фрази окремо: коротке «Добре» зручно слати
-         * відразу, а заготовку, яку щоразу дописуєш, — ні.
+         * Що робиться при натисканні. Вибір для кожної фрази окремо: коротке
+         * «Добре» зручно слати відразу, заготовку, яку дописуєш, — ні, а
+         * посилання на бота не має стосунку ні до того, ні до того.
          */
-        public boolean sendNow;
+        public int action;
 
-        public Button(String label, String text, boolean sendNow) {
+        public Button(String label, String text, int action) {
             this.label = label;
             this.text = text;
-            this.sendNow = sendNow;
+            this.action = action;
         }
     }
 
@@ -180,7 +193,13 @@ public final class QuickButtons {
                         final String label = b.optString("label");
                         final String text = b.optString("text");
                         if (!TextUtils.isEmpty(label) && !TextUtils.isEmpty(text)) {
-                            group.buttons.add(new Button(label, text, b.optBoolean("send", true)));
+                            // Старі записи мали прапорець "send" замість дії:
+                            // читаємо і його, щоб уже створені кнопки не
+                            // порожніли після оновлення.
+                            final int action = b.has("action")
+                                    ? b.optInt("action", ACTION_SEND)
+                                    : (b.optBoolean("send", true) ? ACTION_SEND : ACTION_INSERT);
+                            group.buttons.add(new Button(label, text, action));
                         }
                     }
                 }
@@ -205,7 +224,7 @@ public final class QuickButtons {
                     list.put(new JSONObject()
                             .put("label", button.label)
                             .put("text", button.text)
-                            .put("send", button.sendNow));
+                            .put("action", button.action));
                 }
                 array.put(new JSONObject()
                         .put("name", group.name)
