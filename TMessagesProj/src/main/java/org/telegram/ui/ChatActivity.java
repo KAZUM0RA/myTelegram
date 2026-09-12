@@ -8167,8 +8167,12 @@ public class ChatActivity extends BaseFragment implements
                                 ? button.text : current + " " + button.text);
             }
         });
+        // MATCH_PARENT, а не WRAP_CONTENT: шар має покривати весь чат, бо
+        // кнопки розставляються відносно нього. З WRAP_CONTENT він був
+        // завширшки з саму кнопку, і вона опинялася в кутку під шапкою.
+        // Дотиків шар не перехоплює — це задано в ньому самому.
         contentView.addView(quickButtonsFab, LayoutHelper.createFrame(
-                LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT,
+                LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT,
                 Gravity.LEFT | Gravity.TOP));
 
         int chatListIndex = contentView.indexOfChild(chatListView);

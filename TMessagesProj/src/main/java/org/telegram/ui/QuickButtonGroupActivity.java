@@ -121,6 +121,7 @@ public class QuickButtonGroupActivity extends BaseFragment {
         previewHolder.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
         previewHolder.setPadding(0, dp(14), 0, dp(14));
         preview = new QuickButtonsFab(context);
+        preview.setPreviewMode(true);
         previewHolder.addView(preview, LayoutHelper.createFrame(
                 LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
         root.addView(previewHolder);
@@ -174,9 +175,9 @@ public class QuickButtonGroupActivity extends BaseFragment {
         rebuildPhrases(context);
         updateRows();
         if (preview != null) {
-            // Перегляд читає збережене, тож спершу зберігаємо.
-            preview.bind(dialogId, null);
-            preview.refresh();
+            // Показуємо саме цю групу, а не всі кнопки чату: редагуємо одну,
+            // і бачити поруч чужі було б плутаниною.
+            preview.showPreviewOf(group);
         }
     }
 

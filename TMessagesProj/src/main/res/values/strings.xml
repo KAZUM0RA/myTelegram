@@ -38,13 +38,13 @@
     <string name="QuickButtonsTitle">Quick buttons</string>
     <string name="QuickButtonsAdd">Add button</string>
     <string name="QuickButtonsEdit">Edit button</string>
-    <string name="QuickButtonsInfo">Buttons are separate for each chat. Tap the floating button in the chat to open the list; drag it to move it where you want.</string>
+    <string name="QuickButtonsInfo">Phrases of this button. In “sends straight away” mode the first one is used.</string>
     <string name="QuickButtonsTooMany">No room for more buttons</string>
     <string name="QuickButtonsLabelHint">Button name (optional)</string>
     <string name="QuickButtonsTextHint">Text to send</string>
     <string name="QuickButtonsSendNow">Send immediately</string>
     <string name="QuickButtonsAppearance">Button look</string>
-    <string name="QuickButtonsAppearanceInfo">The look is shared across all chats — it is the same button, only the list differs.</string>
+    <string name="QuickButtonsAppearanceInfo">Each button has its own look and its own place on screen. Drag it in the chat to move it.</string>
     <string name="QuickButtonsImageOwn">Own picture</string>
     <string name="QuickButtonsImageFailed">Could not use that picture</string>
     <string name="QuickButtonsMode">Panel</string>

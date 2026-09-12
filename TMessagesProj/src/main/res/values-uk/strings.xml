@@ -39,13 +39,13 @@
     <string name="QuickButtonsTitle">Швидкі кнопки</string>
     <string name="QuickButtonsAdd">Додати кнопку</string>
     <string name="QuickButtonsEdit">Змінити кнопку</string>
-    <string name="QuickButtonsInfo">Кнопки свої для кожного чату. Натисни плаваючу кнопку в чаті, щоб відкрити список; перетягни її туди, де зручно.</string>
+    <string name="QuickButtonsInfo">Фрази цієї кнопки. У режимі «надсилає одразу» береться перша.</string>
     <string name="QuickButtonsTooMany">Більше кнопок не вміститься</string>
     <string name="QuickButtonsLabelHint">Назва кнопки (необовʼязково)</string>
     <string name="QuickButtonsTextHint">Текст, який надсилати</string>
     <string name="QuickButtonsSendNow">Надсилати одразу</string>
     <string name="QuickButtonsAppearance">Вигляд кнопки</string>
-    <string name="QuickButtonsAppearanceInfo">Вигляд спільний для всіх чатів — це та сама кнопка, різниться лише список.</string>
+    <string name="QuickButtonsAppearanceInfo">У кожної кнопки свій вигляд і своє місце на екрані. Щоб пересунути — перетягни її в чаті.</string>
     <string name="QuickButtonsImageOwn">Своя картинка</string>
     <string name="QuickButtonsImageFailed">Не вдалося взяти цю картинку</string>
     <string name="QuickButtonsMode">Панель</string>

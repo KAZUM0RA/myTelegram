@@ -50,6 +50,34 @@ public class QuickButtonsFab extends FrameLayout {
     private Utilities.Callback<QuickButtons.Button> onPick;
     private PopupWindow popup;
 
+    /**
+     * Режим показу в налаштуваннях: без розставляння й без перетягування.
+     *
+     * <p>Потрібен, бо розташування рахується від розмірів чату. У маленькому
+     * віконці перегляду той самий розрахунок відсував панель за межі
+     * видимого, і перегляд виглядав порожнім.
+     */
+    private boolean previewMode;
+
+    /** У режимі перегляду показуємо саме цю групу, а не всі кнопки чату. */
+    private QuickButtons.Group previewGroup;
+
+    public void setPreviewMode(boolean preview) {
+        previewMode = preview;
+    }
+
+    /** Показати одну групу як зразок. Нічого не надсилає й не рухається. */
+    public void showPreviewOf(QuickButtons.Group group) {
+        previewMode = true;
+        previewGroup = group;
+        removeAllViews();
+        setVisibility(VISIBLE);
+        if (group != null && !group.buttons.isEmpty()) {
+            addView(buildPanel(group), LayoutHelper.createFrame(
+                    LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
+        }
+    }
+
     public QuickButtonsFab(Context context) {
         super(context);
         touchSlop = ViewConfiguration.get(context).getScaledTouchSlop();
@@ -111,7 +139,9 @@ public class QuickButtonsFab extends FrameLayout {
             panel.addView(circle, LayoutHelper.createLinear(group.size, group.size));
         }
 
-        panel.post(() -> placePanel(panel, group));
+        if (!previewMode) {
+            panel.post(() -> placePanel(panel, group));
+        }
         return panel;
     }
 
@@ -220,6 +250,11 @@ public class QuickButtonsFab extends FrameLayout {
     private boolean handleTouch(View panel, QuickButtons.Group group,
                                 MotionEvent event, QuickButtons.Button direct,
                                 boolean allowsList) {
+        if (previewMode) {
+            // У перегляді панель не рухаємо й нічого не надсилаємо: це
+            // зразок вигляду, а не робоча кнопка.
+            return false;
+        }
         final View parent = (View) panel.getParent();
         switch (event.getActionMasked()) {
             case MotionEvent.ACTION_DOWN:
