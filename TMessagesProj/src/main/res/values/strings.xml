@@ -74,6 +74,11 @@
     <string name="QuickButtonsModeDirect">Sends straight away, no list</string>
     <string name="QuickButtonsPhrases_one">%1$d phrase</string>
     <string name="QuickButtonsPhrases_other">%1$d phrases</string>
+    <string name="QuickButtonsPlace">Where it lives</string>
+    <string name="QuickButtonsPlaceFloating">Floats over the chat</string>
+    <string name="QuickButtonsPlaceHeader">In the chat header</string>
+    <string name="QuickButtonsPlaceInput">Above the input field</string>
+    <string name="QuickButtonsPlaceHeaderHint">The icon will appear next time you open the chat.</string>
     <string name="QuickButtonsColor">Colour</string>
     <string name="QuickButtonsColorTheme">As in theme</string>
     <string name="QuickButtonsColorOwn">Own colour</string>

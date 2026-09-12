@@ -103,16 +103,31 @@ public class QuickButtonsFab extends FrameLayout {
         removeAllViews();
         final ArrayList<QuickButtons.Group> groups = QuickButtons.get(dialogId);
         boolean anything = false;
+        int pinned = 0;
         for (QuickButtons.Group group : groups) {
-            if (group.buttons.isEmpty()) {
+            // Кнопки для шапки малює не шар, а сам ChatActivity — вони
+            // живуть у панелі дій, а не поверх чату.
+            if (group.buttons.isEmpty() || group.place == QuickButtons.PLACE_HEADER) {
                 continue;
             }
             anything = true;
-            addView(buildPanel(group), LayoutHelper.createFrame(
-                    LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT,
-                    Gravity.LEFT | Gravity.TOP));
+            if (group.place == QuickButtons.PLACE_INPUT) {
+                // Закріплена над полем вводу: не перетягується й не тоне під
+                // панеллю вводу — саме через це й додано окреме місце.
+                addView(buildPanel(group), LayoutHelper.createFrame(
+                        LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT,
+                        Gravity.RIGHT | Gravity.BOTTOM, 0, 0, 12, 68 + 56 * pinned));
+                pinned++;
+            } else {
+                addView(buildPanel(group), LayoutHelper.createFrame(
+                        LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT,
+                        Gravity.LEFT | Gravity.TOP));
+            }
         }
         setVisibility(anything ? VISIBLE : GONE);
+        // Шар додається до вмісту чату рано, а панель вводу — пізніше, тож
+        // без цього кнопка опинялася ПІД нею й дістати її було неможливо.
+        bringToFront();
     }
 
     // ── Панель однієї групи ──────────────────────────────────────────────
@@ -139,7 +154,8 @@ public class QuickButtonsFab extends FrameLayout {
             panel.addView(circle, LayoutHelper.createLinear(group.size, group.size));
         }
 
-        if (!previewMode) {
+        // Розставляємо лише плаваючі: закріплені тримає сама розмітка.
+        if (!previewMode && group.place == QuickButtons.PLACE_FLOATING) {
             panel.post(() -> placePanel(panel, group));
         }
         return panel;
@@ -255,6 +271,9 @@ public class QuickButtonsFab extends FrameLayout {
             // зразок вигляду, а не робоча кнопка.
             return false;
         }
+        // Закріплену не перетягуємо: її місце задає розмітка, і зсув лише
+        // розсинхронив би її з полем вводу.
+        final boolean movable = group.place == QuickButtons.PLACE_FLOATING;
         final View parent = (View) panel.getParent();
         switch (event.getActionMasked()) {
             case MotionEvent.ACTION_DOWN:
@@ -268,7 +287,7 @@ public class QuickButtonsFab extends FrameLayout {
             case MotionEvent.ACTION_MOVE: {
                 final float dx = event.getRawX() - downX;
                 final float dy = event.getRawY() - downY;
-                if (!dragging && Math.hypot(dx, dy) > touchSlop) {
+                if (movable && !dragging && Math.hypot(dx, dy) > touchSlop) {
                     dragging = true;
                 }
                 if (dragging && parent != null) {

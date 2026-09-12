@@ -77,6 +77,11 @@
     <string name="QuickButtonsPhrases_few">%1$d фрази</string>
     <string name="QuickButtonsPhrases_many">%1$d фраз</string>
     <string name="QuickButtonsPhrases_other">%1$d фрази</string>
+    <string name="QuickButtonsPlace">Де живе</string>
+    <string name="QuickButtonsPlaceFloating">Плаває поверх чату</string>
+    <string name="QuickButtonsPlaceHeader">У шапці чату</string>
+    <string name="QuickButtonsPlaceInput">Над полем вводу</string>
+    <string name="QuickButtonsPlaceHeaderHint">Значок зʼявиться, коли наступного разу відкриєш чат.</string>
     <string name="QuickButtonsColor">Колір</string>
     <string name="QuickButtonsColorTheme">Як у темі</string>
     <string name="QuickButtonsColorOwn">Власний</string>

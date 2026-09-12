@@ -73,7 +73,9 @@ public final class QuickButtons {
         public int alpha = 100;
         public int mode = MODE_SINGLE;
         public int style = STYLE_LIST;
-        /** Місце на екрані. {@code -1} — ще не пересували. */
+        /** Де живе кнопка: плаває, у шапці чи над полем вводу. */
+        public int place = PLACE_FLOATING;
+        /** Місце на екрані для плаваючої. {@code -1} — ще не пересували. */
         public float x = -1, y = -1;
         public final ArrayList<Button> buttons = new ArrayList<>();
     }
@@ -106,6 +108,18 @@ public final class QuickButtons {
     public static final int STYLE_LIST = 0;
     public static final int STYLE_GRID = 1;
     public static final int STYLE_ROW = 2;
+
+    /** Плаває поверх чату, перетягується пальцем. */
+    public static final int PLACE_FLOATING = 0;
+    /** Значок у шапці чату, поруч із трьома крапками. */
+    public static final int PLACE_HEADER = 1;
+    /**
+     * Закріплена над полем вводу.
+     *
+     * <p>Окремо від плаваючої, бо плаваюча ховалася за панеллю вводу й
+     * дістати її було неможливо. Закріплена сама тримається вище за неї.
+     */
+    public static final int PLACE_INPUT = 2;
 
     /**
      * Готові значки під різні задачі. Порожній рядок — типова стрілка.
@@ -152,6 +166,7 @@ public final class QuickButtons {
                 group.alpha = clamp(item.optInt("alpha", 100), 40, 100);
                 group.mode = item.optInt("mode", MODE_SINGLE);
                 group.style = item.optInt("style", STYLE_LIST);
+                group.place = item.optInt("place", PLACE_FLOATING);
                 group.x = (float) item.optDouble("x", -1);
                 group.y = (float) item.optDouble("y", -1);
 
@@ -202,6 +217,7 @@ public final class QuickButtons {
                         .put("alpha", group.alpha)
                         .put("mode", group.mode)
                         .put("style", group.style)
+                        .put("place", group.place)
                         .put("x", group.x)
                         .put("y", group.y)
                         .put("buttons", list));

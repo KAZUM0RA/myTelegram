@@ -55,7 +55,7 @@ public class QuickButtonGroupActivity extends BaseFragment {
     private LinearLayout listLayout, swatches;
     private FrameLayout previewHolder;
     private QuickButtonsFab preview;
-    private TextSettingsCell nameCell, modeCell, styleCell, iconCell, sizeCell, alphaCell;
+    private TextSettingsCell nameCell, modeCell, styleCell, iconCell, sizeCell, alphaCell, placeCell;
 
     public QuickButtonGroupActivity(long dialogId, int index, Runnable onChanged) {
         this.dialogId = dialogId;
@@ -137,6 +137,8 @@ public class QuickButtonGroupActivity extends BaseFragment {
 
         nameCell = row(context, v -> renameGroup());
         root.addView(nameCell);
+        placeCell = row(context, v -> pickPlace());
+        root.addView(placeCell);
         modeCell = row(context, v -> pickMode());
         root.addView(modeCell);
         styleCell = row(context, v -> pickStyle());
@@ -215,6 +217,7 @@ public class QuickButtonGroupActivity extends BaseFragment {
 
     private void updateRows() {
         nameCell.setTextAndValue(getString(R.string.QuickButtonsGroupName), group.name, true);
+        placeCell.setTextAndValue(getString(R.string.QuickButtonsPlace), placeName(), true);
         modeCell.setTextAndValue(getString(R.string.QuickButtonsMode), modeName(), true);
         styleCell.setTextAndValue(getString(R.string.QuickButtonsStyle), styleName(), true);
         // Список є лише в режимі «одна кнопка зі списком».
@@ -222,6 +225,36 @@ public class QuickButtonGroupActivity extends BaseFragment {
         iconCell.setTextAndValue(getString(R.string.QuickButtonsEmoji), iconName(), true);
         sizeCell.setTextAndValue(getString(R.string.QuickButtonsSize), group.size + " dp", true);
         alphaCell.setTextAndValue(getString(R.string.QuickButtonsAlpha), group.alpha + "%", false);
+    }
+
+    private String placeName() {
+        switch (group.place) {
+            case QuickButtons.PLACE_HEADER:
+                return getString(R.string.QuickButtonsPlaceHeader);
+            case QuickButtons.PLACE_INPUT:
+                return getString(R.string.QuickButtonsPlaceInput);
+            default:
+                return getString(R.string.QuickButtonsPlaceFloating);
+        }
+    }
+
+    private void pickPlace() {
+        final CharSequence[] names = {
+                getString(R.string.QuickButtonsPlaceFloating),
+                getString(R.string.QuickButtonsPlaceHeader),
+                getString(R.string.QuickButtonsPlaceInput),
+        };
+        chooser(getString(R.string.QuickButtonsPlace), names, which -> {
+            group.place = which;
+            persist();
+            if (which == QuickButtons.PLACE_HEADER) {
+                // Шапка будується при відкритті чату, тож значок з'явиться
+                // лише наступного разу. Краще сказати, ніж лишити гадати.
+                BulletinFactory.of(this)
+                        .createSimpleBulletin(R.raw.chats_infotip,
+                                getString(R.string.QuickButtonsPlaceHeaderHint)).show();
+            }
+        });
     }
 
     private String modeName() {

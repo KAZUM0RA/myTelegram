@@ -1241,6 +1241,92 @@ public class ChatActivity extends BaseFragment implements
     public final static int OPTION_AI_VOICE = 902;
     /** Форк: зберегти повідомлення в «Збережене» одним дотиком. */
     public final static int OPTION_SAVE_TO_SAVED = 903;
+
+    /**
+     * Форк: значки швидких кнопок у шапці чату.
+     *
+     * <p>Номери починаються далеко від нумерації апстріму, щоб нові пункти
+     * в наступних версіях Telegram не зіткнулися з нашими.
+     */
+    private final static int quick_button_header_base = 9100;
+
+    private void addQuickButtonsToHeader(org.telegram.ui.ActionBar.ActionBarMenu menu) {
+        try {
+            final java.util.ArrayList<org.telegram.quickbuttons.QuickButtons.Group> groups =
+                    org.telegram.quickbuttons.QuickButtons.get(getDialogId());
+            for (int i = 0; i < groups.size(); i++) {
+                final org.telegram.quickbuttons.QuickButtons.Group group = groups.get(i);
+                if (group.buttons.isEmpty()
+                        || group.place != org.telegram.quickbuttons.QuickButtons.PLACE_HEADER) {
+                    continue;
+                }
+                int icon = R.drawable.msg_send;
+                if (!TextUtils.isEmpty(group.icon)) {
+                    final android.content.Context ctx = ApplicationLoader.applicationContext;
+                    final int id = ctx.getResources().getIdentifier(
+                            group.icon, "drawable", ctx.getPackageName());
+                    if (id != 0) {
+                        icon = id;
+                    }
+                }
+                final org.telegram.ui.ActionBar.ActionBarMenuItem item =
+                        menu.addItem(quick_button_header_base + i, icon);
+                item.setContentDescription(group.name);
+            }
+        } catch (Throwable e) {
+            FileLog.e("ChatActivity: не вдалося додати швидкі кнопки в шапку");
+        }
+    }
+
+    /** Обробляє натискання значка швидкої кнопки в шапці. */
+    private boolean handleQuickButtonHeader(int id) {
+        if (id < quick_button_header_base || id >= quick_button_header_base + 100) {
+            return false;
+        }
+        final java.util.ArrayList<org.telegram.quickbuttons.QuickButtons.Group> groups =
+                org.telegram.quickbuttons.QuickButtons.get(getDialogId());
+        final int index = id - quick_button_header_base;
+        if (index < 0 || index >= groups.size()) {
+            return true;
+        }
+        final org.telegram.quickbuttons.QuickButtons.Group group = groups.get(index);
+        if (group.buttons.isEmpty()) {
+            return true;
+        }
+        if (group.mode == org.telegram.quickbuttons.QuickButtons.MODE_DIRECT) {
+            applyQuickButton(group.buttons.get(0));
+        } else {
+            // Список показуємо звичайним меню: у шапці немає до чого
+            // прив'язати спливне вікно так, щоб воно не вилізло за екран.
+            final CharSequence[] names = new CharSequence[group.buttons.size()];
+            for (int i = 0; i < names.length; i++) {
+                names[i] = group.buttons.get(i).label;
+            }
+            new org.telegram.ui.ActionBar.AlertDialog.Builder(getParentActivity())
+                    .setTitle(group.name)
+                    .setItems(names, (dialog, which) -> applyQuickButton(group.buttons.get(which)))
+                    .setNegativeButton(LocaleController.getString(R.string.Cancel), null)
+                    .show();
+        }
+        return true;
+    }
+
+    /** Спільна дія для всіх місць: надіслати фразу або покласти в поле. */
+    private void applyQuickButton(org.telegram.quickbuttons.QuickButtons.Button button) {
+        if (chatActivityEnterView == null) {
+            return;
+        }
+        if (button.sendNow) {
+            chatActivityEnterView.setFieldText(button.text);
+            chatActivityEnterView.sendMessage();
+        } else {
+            // Не затираємо набране: дописуємо до нього. Інакше кнопка зжерла
+            // б недописану думку.
+            final CharSequence current = chatActivityEnterView.getFieldText();
+            chatActivityEnterView.setFieldText(TextUtils.isEmpty(current)
+                    ? button.text : current + " " + button.text);
+        }
+    }
     public final static int OPTION_TRANSCRIBE = 30;
     public final static int OPTION_HIDE_SPONSORED_MESSAGE = 31;
     public final static int OPTION_VIEW_IN_TOPIC = 32;
@@ -4028,6 +4114,8 @@ public class ChatActivity extends BaseFragment implements
                     checkTranslation(true);
                 } else if (id == ai_summary) {
                     org.telegram.ai.AiAssistUi.summarize(ChatActivity.this, messages);
+                } else if (handleQuickButtonHeader(id)) {
+                    // Оброблено значком швидкої кнопки в шапці.
                 } else if (id == quick_buttons) {
                     presentFragment(new QuickButtonsActivity(getDialogId(), () -> {
                         if (quickButtonsFab != null) {
@@ -4363,6 +4451,9 @@ public class ChatActivity extends BaseFragment implements
             if (currentUser != null) {
                 userFull = getMessagesController().getUserFull(currentUser.id);
             }
+            // Форк: швидкі кнопки, для яких обрано місце «у шапці». Ставимо
+            // перед трьома крапками, бо то дія, а не меню налаштувань.
+            addQuickButtonsToHeader(menu);
             headerItem = menu.addItem(chat_menu_options, otherIcon);
             headerItem.setSubMenuDelegate(new ActionBarMenuItem.ActionBarSubMenuItemDelegate() {
                 @Override
@@ -8151,22 +8242,8 @@ public class ChatActivity extends BaseFragment implements
         // Додаємо в contentView, а не в контейнер поля вводу: кнопку можна
         // перетягнути куди завгодно, тож їй потрібна вся площа чату.
         quickButtonsFab = new org.telegram.ui.Components.QuickButtonsFab(context);
-        quickButtonsFab.bind(getDialogId(), button -> {
-            if (chatActivityEnterView == null) {
-                return;
-            }
-            if (button.sendNow) {
-                chatActivityEnterView.setFieldText(button.text);
-                chatActivityEnterView.sendMessage();
-            } else {
-                // Не затираємо набране: дописуємо до нього. Інакше кнопка
-                // зжерла б half-написану думку, і це було б неприємно.
-                final CharSequence current = chatActivityEnterView.getFieldText();
-                chatActivityEnterView.setFieldText(
-                        android.text.TextUtils.isEmpty(current)
-                                ? button.text : current + " " + button.text);
-            }
-        });
+        // Дія та сама, що й для кнопок у шапці, тож спільний метод.
+        quickButtonsFab.bind(getDialogId(), this::applyQuickButton);
         // MATCH_PARENT, а не WRAP_CONTENT: шар має покривати весь чат, бо
         // кнопки розставляються відносно нього. З WRAP_CONTENT він був
         // завширшки з саму кнопку, і вона опинялася в кутку під шапкою.
