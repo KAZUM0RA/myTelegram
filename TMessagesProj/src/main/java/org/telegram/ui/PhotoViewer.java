@@ -11895,7 +11895,17 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                         }
                     });
                 }
-            } catch (Exception e) {
+            } catch (Throwable e) {
+                // Форк: саме Throwable, а не Exception.
+                //
+                // Знайдено в логах за тиждень: застосунок упав тут з
+                // OutOfMemoryError під час розпізнавання облич — забракло 5 МБ
+                // при вичерпаній купі. OutOfMemoryError успадковується від
+                // Error, а не від Exception, тож наявний catch його не ловив,
+                // і збій завершував увесь месенджер.
+                //
+                // Розпізнавання облич тут — дрібна зручність для кадрування.
+                // Її невдача не повинна коштувати процесу з усіма чатами.
                 FileLog.e(e);
             } finally {
                 if (faceDetector != null) {
