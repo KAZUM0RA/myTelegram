@@ -63,6 +63,17 @@
     <string name="QuickButtonsIconClock">Clock</string>
     <string name="QuickButtonsIconCheck">Tick</string>
     <string name="QuickButtonsIconQuestion">Question</string>
+    <string name="QuickButtonsAddGroup">Add a button</string>
+    <string name="QuickButtonsNewGroup">New button</string>
+    <string name="QuickButtonsTooManyGroups">No room for more buttons</string>
+    <string name="QuickButtonsGroupsInfo">Each button is separate: its own phrases, icon, colour and place on screen. Drag a button in the chat to move it.</string>
+    <string name="QuickButtonsGroupName">Name</string>
+    <string name="QuickButtonsPhrasesHeader">Phrases</string>
+    <string name="QuickButtonsDeleteGroup">Delete this button</string>
+    <string name="QuickButtonsDeleteGroupText">The button and all its phrases will be removed from this chat.</string>
+    <string name="QuickButtonsModeDirect">Sends straight away, no list</string>
+    <string name="QuickButtonsPhrases_one">%1$d phrase</string>
+    <string name="QuickButtonsPhrases_other">%1$d phrases</string>
     <string name="QuickButtonsColor">Colour</string>
     <string name="QuickButtonsColorTheme">As in theme</string>
     <string name="QuickButtonsColorOwn">Own colour</string>

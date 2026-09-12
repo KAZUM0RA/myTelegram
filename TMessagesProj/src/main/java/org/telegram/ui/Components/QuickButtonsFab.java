@@ -13,9 +13,11 @@ import android.text.TextUtils;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewConfiguration;
 import android.view.ViewOutlineProvider;
 import android.widget.FrameLayout;
 import android.widget.GridLayout;
+import android.widget.HorizontalScrollView;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.PopupWindow;
@@ -30,42 +32,36 @@ import org.telegram.ui.ActionBar.Theme;
 import java.util.ArrayList;
 
 /**
- * Панель швидких фраз поверх чату.
+ * Шар швидких кнопок поверх чату.
  *
- * <p>Два режими на вибір для кожного чату. {@code MODE_SINGLE} — одна
- * кругла кнопка, що відкриває список: не займає місця, але потребує двох
- * дотиків. {@code MODE_SEPARATE} — усі фрази одразу на екрані: один дотик,
- * але більше зайнятої площі. Що краще, залежить від чату, тож вибір
- * зберігається окремо для кожного.
+ * <p>Тримає всі групи чату одночасно: кожна — окрема плаваюча панель зі
+ * своїм місцем, значком і набором фраз. Саме шар, а не одна кнопка, бо
+ * груп може бути кілька, і кожна пересувається незалежно.
  *
- * <p>Панель перетягується пальцем і запам'ятовує місце. Положення, на
- * відміну від решти вигляду, спільне для всіх чатів: рука шукає кнопку на
- * одному місці незалежно від того, хто на тому боці.
- *
- * <p>Відрізняти перетягування від дотику доводиться вручну: звичайний
- * {@code OnClickListener} спрацьовував би наприкінці кожного перетягування.
+ * <p>Режими для кожної групи свої:
+ * {@code MODE_SINGLE} — кружечок відкриває список;
+ * {@code MODE_SEPARATE} — фрази розкладені поруч;
+ * {@code MODE_DIRECT} — кружечок одразу надсилає єдину фразу.
  */
 public class QuickButtonsFab extends FrameLayout {
 
     private final int touchSlop;
-    private final LinearLayout content;
-
-    private float downX, downY, startX, startY;
-    private boolean dragging;
-
     private long dialogId;
     private Utilities.Callback<QuickButtons.Button> onPick;
     private PopupWindow popup;
 
     public QuickButtonsFab(Context context) {
         super(context);
-        touchSlop = android.view.ViewConfiguration.get(context).getScaledTouchSlop();
+        touchSlop = ViewConfiguration.get(context).getScaledTouchSlop();
+        // Сам шар подій не ловить — інакше він перехопив би дотики по чату
+        // на всю свою площу. Ловлять лише самі панелі.
+        setClickable(false);
+        setFocusable(false);
+    }
 
-        content = new LinearLayout(context);
-        content.setOrientation(LinearLayout.VERTICAL);
-        content.setGravity(Gravity.END);
-        addView(content, LayoutHelper.createFrame(
-                LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
+    @Override
+    public boolean onInterceptTouchEvent(MotionEvent event) {
+        return false;
     }
 
     public void bind(long dialogId, Utilities.Callback<QuickButtons.Button> onPick) {
@@ -74,56 +70,89 @@ public class QuickButtonsFab extends FrameLayout {
         refresh();
     }
 
-    /** Перебудовує панель після зміни кнопок або вигляду. */
+    /** Перебудовує шар після зміни груп або їхнього вигляду. */
     public void refresh() {
-        final ArrayList<QuickButtons.Button> buttons = QuickButtons.get(dialogId);
-        setVisibility(buttons.isEmpty() ? GONE : VISIBLE);
-        content.removeAllViews();
-        if (buttons.isEmpty()) {
+        removeAllViews();
+        final ArrayList<QuickButtons.Group> groups = QuickButtons.get(dialogId);
+        boolean anything = false;
+        for (QuickButtons.Group group : groups) {
+            if (group.buttons.isEmpty()) {
+                continue;
+            }
+            anything = true;
+            addView(buildPanel(group), LayoutHelper.createFrame(
+                    LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT,
+                    Gravity.LEFT | Gravity.TOP));
+        }
+        setVisibility(anything ? VISIBLE : GONE);
+    }
+
+    // ── Панель однієї групи ──────────────────────────────────────────────
+
+    private View buildPanel(QuickButtons.Group group) {
+        final Context context = getContext();
+        final LinearLayout panel = new LinearLayout(context);
+        panel.setOrientation(LinearLayout.VERTICAL);
+        panel.setGravity(Gravity.END);
+        panel.setAlpha(group.alpha / 100f);
+
+        if (group.mode == QuickButtons.MODE_SEPARATE) {
+            for (QuickButtons.Button button : group.buttons) {
+                panel.addView(makePill(group, button, panel),
+                        LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT,
+                                LayoutHelper.WRAP_CONTENT, Gravity.END, 0, 0, 0, 6));
+            }
+        } else {
+            final View circle = makeCircle(group);
+            // MODE_DIRECT надсилає першу фразу, MODE_SINGLE відкриває список.
+            final QuickButtons.Button direct = group.mode == QuickButtons.MODE_DIRECT
+                    ? group.buttons.get(0) : null;
+            circle.setOnTouchListener((v, e) -> handleTouch(panel, group, e, direct, true));
+            panel.addView(circle, LayoutHelper.createLinear(group.size, group.size));
+        }
+
+        panel.post(() -> placePanel(panel, group));
+        return panel;
+    }
+
+    private void placePanel(View panel, QuickButtons.Group group) {
+        final View parent = (View) panel.getParent();
+        if (parent == null) {
             return;
         }
-        if (QuickButtons.getMode(dialogId) == QuickButtons.MODE_SEPARATE) {
-            buildSeparate(buttons);
+        if (group.x < 0 || group.y < 0) {
+            // Ще не пересували: ставимо праворуч над полем вводу — там
+            // найменше шансів перекрити текст повідомлень. Кожну наступну
+            // групу трохи вище, щоб вони не лягли одна на одну.
+            final int index = indexOfChild(panel);
+            panel.setTranslationX(parent.getWidth() - panel.getWidth() - dp(12));
+            panel.setTranslationY(parent.getHeight() - panel.getHeight()
+                    - dp(120) - dp(56) * index);
         } else {
-            buildSingle();
+            panel.setTranslationX(clamp(group.x, parent.getWidth() - panel.getWidth()));
+            panel.setTranslationY(clamp(group.y, parent.getHeight() - panel.getHeight()));
         }
-        setAlpha(QuickButtons.getAlphaPercent(dialogId) / 100f);
     }
 
-    // ── Режим «одна кнопка» ──────────────────────────────────────────────
-
-    private void buildSingle() {
-        final int size = QuickButtons.getSize(dialogId);
-        final View circle = makeCircle(size);
-        circle.setOnTouchListener(this::handleTouch);
-        content.addView(circle, LayoutHelper.createLinear(size, size));
-    }
-
-    /** Кругла кнопка з обраним значком: картинка, емодзі, вектор або стрілка. */
-    private View makeCircle(int size) {
+    /** Кругла кнопка групи з обраним значком. */
+    private View makeCircle(QuickButtons.Group group) {
         final Context context = getContext();
         final FrameLayout circle = new FrameLayout(context);
 
-        final int chosen = QuickButtons.getColor(dialogId);
-        final int background = chosen == QuickButtons.COLOR_THEME
-                ? Theme.getColor(Theme.key_chats_actionBackground) : chosen;
+        final int background = group.color == QuickButtons.COLOR_THEME
+                ? Theme.getColor(Theme.key_chats_actionBackground) : group.color;
         circle.setBackground(Theme.createSimpleSelectorCircleDrawable(
-                dp(size), background, darken(background)));
+                dp(group.size), background, darken(background)));
         circle.setElevation(dp(4));
 
         // Порядок навмисний: власна картинка перекриває емодзі, емодзі —
         // готовий значок, той — типову стрілку. Один зрозумілий вибір
         // замість кількох прапорців, які могли б суперечити.
-        final java.io.File image = QuickButtons.getImage(dialogId);
-        final String emoji = QuickButtons.getEmoji(dialogId);
-        final String icon = QuickButtons.getIcon(dialogId);
-
+        final java.io.File image = QuickButtons.imageFile(group.image);
         if (image != null) {
             final ImageView view = new ImageView(context);
             view.setScaleType(ImageView.ScaleType.CENTER_CROP);
             view.setImageBitmap(BitmapFactory.decodeFile(image.getAbsolutePath()));
-            // Обрізаємо колом: кнопка кругла, і квадратне фото в ній
-            // виглядало б випадковим.
             view.setClipToOutline(true);
             view.setOutlineProvider(new ViewOutlineProvider() {
                 @Override
@@ -133,22 +162,41 @@ public class QuickButtonsFab extends FrameLayout {
             });
             circle.addView(view, LayoutHelper.createFrame(
                     LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
-        } else if (!TextUtils.isEmpty(emoji)) {
+        } else if (!TextUtils.isEmpty(group.emoji)) {
             final TextView view = new TextView(context);
             view.setGravity(Gravity.CENTER);
-            view.setText(emoji);
-            view.setTextSize(android.util.TypedValue.COMPLEX_UNIT_DIP, size * 0.45f);
+            view.setText(group.emoji);
+            view.setTextSize(android.util.TypedValue.COMPLEX_UNIT_DIP, group.size * 0.45f);
             circle.addView(view, LayoutHelper.createFrame(
                     LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
         } else {
             final ImageView view = new ImageView(context);
             view.setScaleType(ImageView.ScaleType.CENTER);
-            view.setImageResource(iconResource(icon));
+            view.setImageResource(iconResource(group.icon));
             view.setColorFilter(Theme.getColor(Theme.key_chats_actionIcon));
             circle.addView(view, LayoutHelper.createFrame(
                     LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
         }
         return circle;
+    }
+
+    private TextView makePill(QuickButtons.Group group, QuickButtons.Button button, View panel) {
+        final int background = group.color == QuickButtons.COLOR_THEME
+                ? Theme.getColor(Theme.key_chats_actionBackground) : group.color;
+        final TextView pill = new TextView(getContext());
+        pill.setText(button.label);
+        pill.setTextSize(android.util.TypedValue.COMPLEX_UNIT_DIP, 14);
+        pill.setTextColor(Theme.getColor(Theme.key_chats_actionIcon));
+        pill.setGravity(Gravity.CENTER);
+        pill.setMaxLines(1);
+        pill.setEllipsize(TextUtils.TruncateAt.END);
+        pill.setPadding(dp(14), dp(8), dp(14), dp(8));
+        pill.setBackground(Theme.createRoundRectDrawable(dp(18), background));
+        pill.setElevation(dp(3));
+        // Кожна фраза і надсилає, і пересуває панель: окремої «ручки» для
+        // перетягування немає, бо вона з'їдала б місце.
+        pill.setOnTouchListener((v, e) -> handleTouch(panel, group, e, button, false));
+        return pill;
     }
 
     private int iconResource(String name) {
@@ -160,49 +208,25 @@ public class QuickButtonsFab extends FrameLayout {
         return id != 0 ? id : R.drawable.msg_send;
     }
 
-    // ── Режим «кнопки поруч» ─────────────────────────────────────────────
+    // ── Перетягування й дотики ───────────────────────────────────────────
 
-    private void buildSeparate(ArrayList<QuickButtons.Button> buttons) {
-        final Context context = getContext();
-        final int chosen = QuickButtons.getColor(dialogId);
-        final int background = chosen == QuickButtons.COLOR_THEME
-                ? Theme.getColor(Theme.key_chats_actionBackground) : chosen;
+    private float downX, downY, startX, startY;
+    private boolean dragging;
 
-        for (QuickButtons.Button button : buttons) {
-            final TextView pill = new TextView(context);
-            pill.setText(button.label);
-            pill.setTextSize(android.util.TypedValue.COMPLEX_UNIT_DIP, 14);
-            pill.setTextColor(Theme.getColor(Theme.key_chats_actionIcon));
-            pill.setGravity(Gravity.CENTER);
-            pill.setMaxLines(1);
-            pill.setEllipsize(TextUtils.TruncateAt.END);
-            pill.setPadding(dp(14), dp(8), dp(14), dp(8));
-            pill.setBackground(Theme.createRoundRectDrawable(dp(18), background));
-            pill.setElevation(dp(3));
-            // Кожна кнопка і надсилає, і перетягує панель: окремої «ручки»
-            // для перетягування немає, бо вона з'їдала б місце.
-            pill.setOnTouchListener((v, event) -> handleTouch(v, event, button));
-            content.addView(pill, LayoutHelper.createLinear(
-                    LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT,
-                    Gravity.END, 0, 0, 0, 6));
-        }
-    }
-
-    // ── Перетягування ────────────────────────────────────────────────────
-
-    private boolean handleTouch(View v, MotionEvent event) {
-        return handleTouch(v, event, null);
-    }
-
-    /** @param direct якщо не null — дотик одразу спрацьовує цією кнопкою. */
-    private boolean handleTouch(View v, MotionEvent event, QuickButtons.Button direct) {
-        final View parent = (View) getParent();
+    /**
+     * @param direct     фраза, яку надіслати при дотику; {@code null} — відкрити список
+     * @param allowsList чи може ця панель показувати список
+     */
+    private boolean handleTouch(View panel, QuickButtons.Group group,
+                                MotionEvent event, QuickButtons.Button direct,
+                                boolean allowsList) {
+        final View parent = (View) panel.getParent();
         switch (event.getActionMasked()) {
             case MotionEvent.ACTION_DOWN:
                 downX = event.getRawX();
                 downY = event.getRawY();
-                startX = getTranslationX();
-                startY = getTranslationY();
+                startX = panel.getTranslationX();
+                startY = panel.getTranslationY();
                 dragging = false;
                 return true;
 
@@ -213,8 +237,8 @@ public class QuickButtonsFab extends FrameLayout {
                     dragging = true;
                 }
                 if (dragging && parent != null) {
-                    setTranslationX(clamp(startX + dx, parent.getWidth() - getWidth()));
-                    setTranslationY(clamp(startY + dy, parent.getHeight() - getHeight()));
+                    panel.setTranslationX(clamp(startX + dx, parent.getWidth() - panel.getWidth()));
+                    panel.setTranslationY(clamp(startY + dy, parent.getHeight() - panel.getHeight()));
                 }
                 return true;
             }
@@ -222,14 +246,14 @@ public class QuickButtonsFab extends FrameLayout {
             case MotionEvent.ACTION_UP:
             case MotionEvent.ACTION_CANCEL:
                 if (dragging) {
-                    QuickButtons.savePosition(getTranslationX(), getTranslationY());
+                    savePosition(group, panel.getTranslationX(), panel.getTranslationY());
                 } else if (event.getActionMasked() == MotionEvent.ACTION_UP) {
                     if (direct != null) {
                         if (onPick != null) {
                             onPick.run(direct);
                         }
-                    } else {
-                        showList();
+                    } else if (allowsList) {
+                        showList(panel, group);
                     }
                 }
                 dragging = false;
@@ -238,30 +262,25 @@ public class QuickButtonsFab extends FrameLayout {
         return false;
     }
 
-    @Override
-    protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
-        super.onLayout(changed, left, top, right, bottom);
-        if (changed) {
-            applySavedPosition();
+    /**
+     * Зберігає місце саме цієї групи.
+     *
+     * <p>Перечитуємо й перезаписуємо весь набір: груп одиниці, тож простота
+     * тут дорожча за економію. Знаходимо групу за назвою й порядком, бо
+     * власного ідентифікатора в неї немає.
+     */
+    private void savePosition(QuickButtons.Group group, float x, float y) {
+        group.x = x;
+        group.y = y;
+        final ArrayList<QuickButtons.Group> groups = QuickButtons.get(dialogId);
+        for (QuickButtons.Group stored : groups) {
+            if (TextUtils.equals(stored.name, group.name)) {
+                stored.x = x;
+                stored.y = y;
+                break;
+            }
         }
-    }
-
-    private void applySavedPosition() {
-        final View parent = (View) getParent();
-        if (parent == null) {
-            return;
-        }
-        final float x = QuickButtons.getPositionX();
-        final float y = QuickButtons.getPositionY();
-        if (x < 0 || y < 0) {
-            // Ще не пересували: ставимо над полем вводу праворуч — там, де
-            // найменше шансів перекрити текст повідомлень.
-            setTranslationX(parent.getWidth() - getWidth() - dp(12));
-            setTranslationY(parent.getHeight() - getHeight() - dp(120));
-        } else {
-            setTranslationX(clamp(x, parent.getWidth() - getWidth()));
-            setTranslationY(clamp(y, parent.getHeight() - getHeight()));
-        }
+        QuickButtons.save(dialogId, groups);
     }
 
     private float clamp(float value, int max) {
@@ -277,23 +296,21 @@ public class QuickButtonsFab extends FrameLayout {
                 (int) (android.graphics.Color.blue(color) * k));
     }
 
-    // ── Список ───────────────────────────────────────────────────────────
+    // ── Список групи ─────────────────────────────────────────────────────
 
-    private void showList() {
-        final ArrayList<QuickButtons.Button> buttons = QuickButtons.get(dialogId);
-        if (buttons.isEmpty() || onPick == null) {
+    private void showList(View anchor, QuickButtons.Group group) {
+        if (group.buttons.isEmpty() || onPick == null) {
             return;
         }
         final Context context = getContext();
-        final int style = QuickButtons.getStyle(dialogId);
 
         final View body;
-        if (style == QuickButtons.STYLE_GRID) {
-            body = buildGrid(context, buttons);
-        } else if (style == QuickButtons.STYLE_ROW) {
-            body = buildRow(context, buttons);
+        if (group.style == QuickButtons.STYLE_GRID) {
+            body = buildGrid(context, group);
+        } else if (group.style == QuickButtons.STYLE_ROW) {
+            body = buildRow(context, group);
         } else {
-            body = buildColumn(context, buttons);
+            body = buildColumn(context, group);
         }
 
         final FrameLayout wrapper = new FrameLayout(context);
@@ -308,13 +325,14 @@ public class QuickButtonsFab extends FrameLayout {
         popup.setOutsideTouchable(true);
         // Показуємо вгору: кнопка зазвичай унизу екрана, і список, розкритий
         // донизу, не вмістився б.
-        popup.showAsDropDown(this, -dp(140), -dp(60) - dp(40) * Math.min(buttons.size(), 6));
+        popup.showAsDropDown(anchor, -dp(140),
+                -dp(60) - dp(40) * Math.min(group.buttons.size(), 6));
     }
 
-    private View buildColumn(Context context, ArrayList<QuickButtons.Button> buttons) {
+    private View buildColumn(Context context, QuickButtons.Group group) {
         final LinearLayout list = new LinearLayout(context);
         list.setOrientation(LinearLayout.VERTICAL);
-        for (QuickButtons.Button button : buttons) {
+        for (QuickButtons.Button button : group.buttons) {
             list.addView(makeItem(context, button, dp(200)));
         }
         final ScrollView scroll = new ScrollView(context);
@@ -322,24 +340,22 @@ public class QuickButtonsFab extends FrameLayout {
         return scroll;
     }
 
-    private View buildRow(Context context, ArrayList<QuickButtons.Button> buttons) {
+    private View buildRow(Context context, QuickButtons.Group group) {
         final LinearLayout row = new LinearLayout(context);
         row.setOrientation(LinearLayout.HORIZONTAL);
-        for (QuickButtons.Button button : buttons) {
-            row.addView(makeItem(context, button, LayoutHelper.WRAP_CONTENT));
+        for (QuickButtons.Button button : group.buttons) {
+            row.addView(makeItem(context, button, 0));
         }
-        final android.widget.HorizontalScrollView scroll =
-                new android.widget.HorizontalScrollView(context);
+        final HorizontalScrollView scroll = new HorizontalScrollView(context);
         scroll.addView(row);
         return scroll;
     }
 
-    private View buildGrid(Context context, ArrayList<QuickButtons.Button> buttons) {
+    private View buildGrid(Context context, QuickButtons.Group group) {
         final GridLayout grid = new GridLayout(context);
         grid.setColumnCount(2);
-        for (QuickButtons.Button button : buttons) {
-            final View item = makeItem(context, button, dp(130));
-            grid.addView(item);
+        for (QuickButtons.Button button : group.buttons) {
+            grid.addView(makeItem(context, button, dp(130)));
         }
         return grid;
     }

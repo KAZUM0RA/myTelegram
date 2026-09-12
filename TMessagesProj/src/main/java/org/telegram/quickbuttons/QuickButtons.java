@@ -6,6 +6,7 @@ package org.telegram.quickbuttons;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.net.Uri;
 import android.text.TextUtils;
 
 import org.json.JSONArray;
@@ -13,20 +14,22 @@ import org.json.JSONObject;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
 
+import java.io.File;
 import java.util.ArrayList;
 
 /**
  * Швидкі кнопки — заготовані фрази, які надсилаються одним дотиком.
  *
- * <p>Набір кнопок свій для КОЖНОГО чату: з різними людьми потрібні різні
- * заготовки, і спільний список швидко став би звалищем. Ключ у
- * налаштуваннях — ідентифікатор діалогу.
+ * <p>Влаштовано ГРУПАМИ. Кожна група — окрема плаваюча кнопка зі своїм
+ * списком фраз, своїм значком, кольором і місцем на екрані. Так в одному
+ * чаті можна тримати «Робота» й «Побутове» поруч, не змішуючи їх: список
+ * із двадцяти фраз без поділу шукати довше, ніж просто набрати текст.
  *
- * <p>Положення панелі, навпаки, спільне: вона має бути там, де її звикла
- * шукати рука, а не стрибати між чатами.
+ * <p>Групи свої для КОЖНОГО чату: з різними людьми потрібні різні
+ * заготовки.
  *
- * <p>Зберігаємо JSON у SharedPreferences. Своєї бази тут не треба: кнопок
- * одиниці, а не тисячі, і читаються вони лише при відкритті чату.
+ * <p>Зберігаємо одним JSON на діалог. Своєї бази тут не треба: груп
+ * одиниці, а читаються вони лише при відкритті чату.
  */
 public final class QuickButtons {
 
@@ -34,19 +37,21 @@ public final class QuickButtons {
     }
 
     private static final String PREFS = "quickbuttons";
-    private static final String PREF_POSITION_X = "posX";
-    private static final String PREF_POSITION_Y = "posY";
 
-    /** Скільки кнопок дозволяємо. Більше не влізе у спливний список. */
+    /** Скільки груп дозволяємо. Більше не влізе на екран, не перекривши чат. */
+    public static final int MAX_GROUPS = 6;
+    /** Скільки фраз у групі. Довший список простіше набрати, ніж знайти. */
     public static final int MAX_BUTTONS = 12;
+
+    // ── Моделі ───────────────────────────────────────────────────────────
 
     public static final class Button {
         public String label;
         public String text;
         /**
          * {@code true} — надіслати одразу, {@code false} — покласти в поле
-         * вводу. Вибір для кожної кнопки окремо: коротке «Добре» зручно
-         * слати відразу, а заготовку, яку щоразу дописуєш, — ні.
+         * вводу. Вибір для кожної фрази окремо: коротке «Добре» зручно слати
+         * відразу, а заготовку, яку щоразу дописуєш, — ні.
          */
         public boolean sendNow;
 
@@ -57,104 +62,23 @@ public final class QuickButtons {
         }
     }
 
-    private static SharedPreferences prefs() {
-        return ApplicationLoader.applicationContext
-                .getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+    public static final class Group {
+        public String name = "";
+        public String icon = "";
+        public String emoji = "";
+        /** Ім'я файлу власної картинки. Порожнє — картинки немає. */
+        public String image = "";
+        public int color = COLOR_THEME;
+        public int size = 44;
+        public int alpha = 100;
+        public int mode = MODE_SINGLE;
+        public int style = STYLE_LIST;
+        /** Місце на екрані. {@code -1} — ще не пересували. */
+        public float x = -1, y = -1;
+        public final ArrayList<Button> buttons = new ArrayList<>();
     }
 
-    // ── Кнопки чату ──────────────────────────────────────────────────────
-
-    public static ArrayList<Button> get(long dialogId) {
-        final ArrayList<Button> result = new ArrayList<>();
-        try {
-            final String raw = prefs().getString(key(dialogId), null);
-            if (TextUtils.isEmpty(raw)) {
-                return result;
-            }
-            final JSONArray array = new JSONArray(raw);
-            for (int i = 0; i < array.length(); i++) {
-                final JSONObject item = array.optJSONObject(i);
-                if (item == null) {
-                    continue;
-                }
-                final String label = item.optString("label");
-                final String text = item.optString("text");
-                if (!TextUtils.isEmpty(label) && !TextUtils.isEmpty(text)) {
-                    // Типово «надіслати одразу»: саме заради швидкості ці
-                    // кнопки й потрібні. Хто хоче інакше — перемкне.
-                    result.add(new Button(label, text, item.optBoolean("send", true)));
-                }
-            }
-        } catch (Throwable e) {
-            FileLog.e("QuickButtons: не вдалося прочитати кнопки чату");
-        }
-        return result;
-    }
-
-    public static void save(long dialogId, ArrayList<Button> buttons) {
-        try {
-            if (buttons == null || buttons.isEmpty()) {
-                prefs().edit().remove(key(dialogId)).apply();
-                return;
-            }
-            final JSONArray array = new JSONArray();
-            for (Button button : buttons) {
-                array.put(new JSONObject()
-                        .put("label", button.label)
-                        .put("text", button.text)
-                        .put("send", button.sendNow));
-            }
-            prefs().edit().putString(key(dialogId), array.toString()).apply();
-        } catch (Throwable e) {
-            FileLog.e("QuickButtons: не вдалося зберегти кнопки чату");
-        }
-    }
-
-    public static boolean hasAny(long dialogId) {
-        return !get(dialogId).isEmpty();
-    }
-
-    private static String key(long dialogId) {
-        return "d" + dialogId;
-    }
-
-    // ── Положення панелі ─────────────────────────────────────────────────
-
-    /**
-     * Збережене положення або {@code -1}, якщо його ще не рухали.
-     *
-     * <p>Мінус один, а не нуль: нуль — це справжній лівий верхній кут, і
-     * відрізнити «не рухали» від «поставили в кут» інакше було б неможливо.
-     */
-    public static float getPositionX() {
-        return prefs().getFloat(PREF_POSITION_X, -1);
-    }
-
-    public static float getPositionY() {
-        return prefs().getFloat(PREF_POSITION_Y, -1);
-    }
-
-    public static void savePosition(float x, float y) {
-        prefs().edit().putFloat(PREF_POSITION_X, x).putFloat(PREF_POSITION_Y, y).apply();
-    }
-    // ── Вигляд кнопки ────────────────────────────────────────────────────
-    //
-    // Усе нижче — ДЛЯ КОЖНОГО ЧАТУ ОКРЕМО. Спершу було спільним, але з
-    // робочим чатом і чатом із близькими потрібні різні кнопки: інший колір,
-    // інший значок, іноді й інший режим. Спільним лишилося тільки положення:
-    // рука шукає кнопку на одному місці незалежно від того, хто на тому боці.
-
-    private static final String PREF_COLOR = "color";
-    private static final String PREF_EMOJI = "emoji";
-    private static final String PREF_SIZE = "size";
-    private static final String PREF_ALPHA = "alpha";
-    private static final String PREF_ICON = "icon";
-    private static final String PREF_MODE = "mode";
-    private static final String PREF_STYLE = "style";
-
-    private static String k(long dialogId, String name) {
-        return "d" + dialogId + "_" + name;
-    }
+    // ── Сталі вигляду ────────────────────────────────────────────────────
 
     /** Нуль означає «як у темі» — колір підхоплюється з оформлення чату. */
     public static final int COLOR_THEME = 0;
@@ -165,44 +89,23 @@ public final class QuickButtons {
             0xFFB4531F, 0xFFA32C22, 0xFF394049,
     };
 
-    public static int getColor(long dialogId) {
-        return prefs().getInt(k(dialogId, PREF_COLOR), COLOR_THEME);
-    }
-
-    public static void setColor(long dialogId, int color) {
-        prefs().edit().putInt(k(dialogId, PREF_COLOR), color).apply();
-    }
-
-    // ── Режим панелі ─────────────────────────────────────────────────────
-
     /** Одна кнопка, яка відкриває список. */
     public static final int MODE_SINGLE = 0;
-    /** Кнопки розкладені поруч, без проміжного дотику. */
+    /** Фрази розкладені поруч, без проміжного дотику. */
     public static final int MODE_SEPARATE = 1;
-
-    public static int getMode(long dialogId) {
-        return prefs().getInt(k(dialogId, PREF_MODE), MODE_SINGLE);
-    }
-
-    public static void setMode(long dialogId, int mode) {
-        prefs().edit().putInt(k(dialogId, PREF_MODE), mode).apply();
-    }
-
-    // ── Вигляд списку ────────────────────────────────────────────────────
+    /**
+     * Проста кнопка без списку: дотик одразу надсилає першу фразу групи.
+     *
+     * <p>Для випадку, коли фраза одна й список їй ні до чого — наприклад
+     * «Виїжджаю» чи «+». Формально це те саме, що група з однією фразою в
+     * режимі «поруч», але кругла кнопка зі значком займає менше місця й
+     * читається як дія, а не як список із одного пункту.
+     */
+    public static final int MODE_DIRECT = 2;
 
     public static final int STYLE_LIST = 0;
     public static final int STYLE_GRID = 1;
     public static final int STYLE_ROW = 2;
-
-    public static int getStyle(long dialogId) {
-        return prefs().getInt(k(dialogId, PREF_STYLE), STYLE_LIST);
-    }
-
-    public static void setStyle(long dialogId, int style) {
-        prefs().edit().putInt(k(dialogId, PREF_STYLE), style).apply();
-    }
-
-    // ── Значок ───────────────────────────────────────────────────────────
 
     /**
      * Готові значки під різні задачі. Порожній рядок — типова стрілка.
@@ -215,56 +118,121 @@ public final class QuickButtons {
             "qb_heart", "qb_work", "qb_clock", "qb_check", "qb_question",
     };
 
-    public static String getIcon(long dialogId) {
-        return prefs().getString(k(dialogId, PREF_ICON), "");
+    // ── Читання й запис ──────────────────────────────────────────────────
+
+    private static SharedPreferences prefs() {
+        return ApplicationLoader.applicationContext
+                .getSharedPreferences(PREFS, Context.MODE_PRIVATE);
     }
 
-    public static void setIcon(long dialogId, String icon) {
-        prefs().edit().putString(k(dialogId, PREF_ICON), icon == null ? "" : icon).apply();
+    private static String key(long dialogId) {
+        return "g" + dialogId;
     }
 
-    /** Порожній рядок — значок не емодзі. */
-    public static String getEmoji(long dialogId) {
-        return prefs().getString(k(dialogId, PREF_EMOJI), "");
-    }
-
-    public static void setEmoji(long dialogId, String emoji) {
-        prefs().edit().putString(k(dialogId, PREF_EMOJI), emoji == null ? "" : emoji.trim()).apply();
-    }
-
-    /** Діаметр у dp. Обмежений знизу, щоб у кнопку можна було влучити. */
-    public static int getSize(long dialogId) {
-        return Math.max(36, Math.min(prefs().getInt(k(dialogId, PREF_SIZE), 44), 72));
-    }
-
-    public static void setSize(long dialogId, int dp) {
-        prefs().edit().putInt(k(dialogId, PREF_SIZE), dp).apply();
-    }
-
-    /**
-     * Непрозорість у відсотках. Нижче сорока не пускаємо: напівневидиму
-     * кнопку неможливо знайти, і це виглядало б як зникла функція.
-     */
-    public static int getAlphaPercent(long dialogId) {
-        return Math.max(40, Math.min(prefs().getInt(k(dialogId, PREF_ALPHA), 100), 100));
-    }
-
-    public static void setAlphaPercent(long dialogId, int percent) {
-        prefs().edit().putInt(k(dialogId, PREF_ALPHA), percent).apply();
-    }
-
-    // ── Власна картинка ──────────────────────────────────────────────────
-    //
-    // Теж для кожного чату: файл названо за діалогом.
-
-    private static java.io.File imageFile(long dialogId) {
-        return new java.io.File(ApplicationLoader.getFilesDirFixed(),
-                "quickbutton_" + dialogId + ".png");
-    }
-
-    public static java.io.File getImage(long dialogId) {
+    public static ArrayList<Group> get(long dialogId) {
+        final ArrayList<Group> groups = new ArrayList<>();
         try {
-            final java.io.File file = imageFile(dialogId);
+            final String raw = prefs().getString(key(dialogId), null);
+            if (TextUtils.isEmpty(raw)) {
+                return groups;
+            }
+            final JSONArray array = new JSONArray(raw);
+            for (int i = 0; i < array.length(); i++) {
+                final JSONObject item = array.optJSONObject(i);
+                if (item == null) {
+                    continue;
+                }
+                final Group group = new Group();
+                group.name = item.optString("name");
+                group.icon = item.optString("icon");
+                group.emoji = item.optString("emoji");
+                group.image = item.optString("image");
+                group.color = item.optInt("color", COLOR_THEME);
+                group.size = clamp(item.optInt("size", 44), 36, 72);
+                group.alpha = clamp(item.optInt("alpha", 100), 40, 100);
+                group.mode = item.optInt("mode", MODE_SINGLE);
+                group.style = item.optInt("style", STYLE_LIST);
+                group.x = (float) item.optDouble("x", -1);
+                group.y = (float) item.optDouble("y", -1);
+
+                final JSONArray list = item.optJSONArray("buttons");
+                if (list != null) {
+                    for (int j = 0; j < list.length(); j++) {
+                        final JSONObject b = list.optJSONObject(j);
+                        if (b == null) {
+                            continue;
+                        }
+                        final String label = b.optString("label");
+                        final String text = b.optString("text");
+                        if (!TextUtils.isEmpty(label) && !TextUtils.isEmpty(text)) {
+                            group.buttons.add(new Button(label, text, b.optBoolean("send", true)));
+                        }
+                    }
+                }
+                groups.add(group);
+            }
+        } catch (Throwable e) {
+            FileLog.e("QuickButtons: не вдалося прочитати групи чату");
+        }
+        return groups;
+    }
+
+    public static void save(long dialogId, ArrayList<Group> groups) {
+        try {
+            if (groups == null || groups.isEmpty()) {
+                prefs().edit().remove(key(dialogId)).apply();
+                return;
+            }
+            final JSONArray array = new JSONArray();
+            for (Group group : groups) {
+                final JSONArray list = new JSONArray();
+                for (Button button : group.buttons) {
+                    list.put(new JSONObject()
+                            .put("label", button.label)
+                            .put("text", button.text)
+                            .put("send", button.sendNow));
+                }
+                array.put(new JSONObject()
+                        .put("name", group.name)
+                        .put("icon", group.icon)
+                        .put("emoji", group.emoji)
+                        .put("image", group.image)
+                        .put("color", group.color)
+                        .put("size", group.size)
+                        .put("alpha", group.alpha)
+                        .put("mode", group.mode)
+                        .put("style", group.style)
+                        .put("x", group.x)
+                        .put("y", group.y)
+                        .put("buttons", list));
+            }
+            prefs().edit().putString(key(dialogId), array.toString()).apply();
+        } catch (Throwable e) {
+            FileLog.e("QuickButtons: не вдалося зберегти групи чату");
+        }
+    }
+
+    public static boolean hasAny(long dialogId) {
+        for (Group group : get(dialogId)) {
+            if (!group.buttons.isEmpty()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static int clamp(int value, int min, int max) {
+        return Math.max(min, Math.min(value, max));
+    }
+
+    // ── Власна картинка групи ────────────────────────────────────────────
+
+    public static File imageFile(String name) {
+        if (TextUtils.isEmpty(name)) {
+            return null;
+        }
+        try {
+            final File file = new File(ApplicationLoader.getFilesDirFixed(), name);
             return file.exists() && file.length() > 0 ? file : null;
         } catch (Throwable e) {
             return null;
@@ -272,48 +240,53 @@ public final class QuickButtons {
     }
 
     /**
-     * Копіює обрану картинку до себе.
+     * Копіює обрану картинку до себе й повертає ім'я файлу.
      *
      * <p>Саме копіює, а не запам'ятовує шлях: доступ до чужого файлу можна
-     * втратити будь-коли — користувач видалить фото, система відкличе дозвіл,
-     * і кнопка лишиться без значка без жодного пояснення.
+     * втратити будь-коли — користувач видалить фото, система відкличе
+     * дозвіл, — і кнопка лишиться без значка без жодного пояснення.
+     *
+     * <p>Ім'я містить час створення: інакше дві групи з картинками
+     * перетирали б файли одна одної.
      */
-    public static boolean setImage(long dialogId, android.net.Uri uri) {
+    public static String saveImage(Uri uri) {
         java.io.InputStream in = null;
         java.io.OutputStream out = null;
         try {
             in = ApplicationLoader.applicationContext.getContentResolver().openInputStream(uri);
             if (in == null) {
-                return false;
+                return "";
             }
             final android.graphics.Bitmap source = android.graphics.BitmapFactory.decodeStream(in);
             if (source == null) {
-                return false;
+                return "";
             }
             // 144 пікселі: більше за найбільший розмір кнопки, і не тягне
             // зайвих мегабайтів у пам'ять на кожному відкритті чату.
             final int side = 144;
             final android.graphics.Bitmap scaled =
                     android.graphics.Bitmap.createScaledBitmap(source, side, side, true);
-            out = new java.io.FileOutputStream(imageFile(dialogId));
+            final String name = "quickbutton_" + System.currentTimeMillis() + ".png";
+            out = new java.io.FileOutputStream(
+                    new File(ApplicationLoader.getFilesDirFixed(), name));
             scaled.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, out);
             if (scaled != source) {
                 scaled.recycle();
             }
             source.recycle();
-            return true;
+            return name;
         } catch (Throwable e) {
             FileLog.e("QuickButtons: не вдалося зберегти картинку кнопки");
-            return false;
+            return "";
         } finally {
             try { if (in != null) in.close(); } catch (Throwable ignored) { }
             try { if (out != null) out.close(); } catch (Throwable ignored) { }
         }
     }
 
-    public static void clearImage(long dialogId) {
+    public static void deleteImage(String name) {
         try {
-            final java.io.File file = getImage(dialogId);
+            final File file = imageFile(name);
             if (file != null) {
                 file.delete();
             }
