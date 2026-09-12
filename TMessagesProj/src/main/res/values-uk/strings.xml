@@ -46,6 +46,8 @@
     <string name="QuickButtonsSendNow">Надсилати одразу</string>
     <string name="QuickButtonsAppearance">Вигляд кнопки</string>
     <string name="QuickButtonsAppearanceInfo">Вигляд спільний для всіх чатів — це та сама кнопка, різниться лише список.</string>
+    <string name="QuickButtonsImageOwn">Своя картинка</string>
+    <string name="QuickButtonsImageFailed">Не вдалося взяти цю картинку</string>
     <string name="QuickButtonsColor">Колір</string>
     <string name="QuickButtonsColorTheme">Як у темі</string>
     <string name="QuickButtonsColorOwn">Власний</string>

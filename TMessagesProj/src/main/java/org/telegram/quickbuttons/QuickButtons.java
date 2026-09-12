@@ -195,4 +195,70 @@ public final class QuickButtons {
     public static void setAlphaPercent(int percent) {
         prefs().edit().putInt(PREF_ALPHA, percent).apply();
     }
+
+    // ── Власна картинка ──────────────────────────────────────────────────
+
+    private static final String IMAGE_NAME = "quickbutton.png";
+
+    /** Файл із власним значком або {@code null}, якщо його не задано. */
+    public static java.io.File getImage() {
+        try {
+            final java.io.File file = new java.io.File(
+                    ApplicationLoader.getFilesDirFixed(), IMAGE_NAME);
+            return file.exists() && file.length() > 0 ? file : null;
+        } catch (Throwable e) {
+            return null;
+        }
+    }
+
+    /**
+     * Копіює обрану картинку до себе.
+     *
+     * <p>Саме копіює, а не запам'ятовує шлях: доступ до чужого файлу можна
+     * втратити будь-коли — користувач видалить фото, система відкличе дозвіл,
+     * і кнопка лишиться без значка без жодного пояснення.
+     */
+    public static boolean setImage(android.net.Uri uri) {
+        java.io.InputStream in = null;
+        java.io.OutputStream out = null;
+        try {
+            in = ApplicationLoader.applicationContext.getContentResolver().openInputStream(uri);
+            if (in == null) {
+                return false;
+            }
+            final android.graphics.Bitmap source = android.graphics.BitmapFactory.decodeStream(in);
+            if (source == null) {
+                return false;
+            }
+            // Зменшуємо до 144 пікселів: більше за найбільший розмір кнопки,
+            // і не тягне зайвих мегабайтів у пам'ять на кожному відкритті чату.
+            final int side = 144;
+            final android.graphics.Bitmap scaled =
+                    android.graphics.Bitmap.createScaledBitmap(source, side, side, true);
+            out = new java.io.FileOutputStream(
+                    new java.io.File(ApplicationLoader.getFilesDirFixed(), IMAGE_NAME));
+            scaled.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, out);
+            if (scaled != source) {
+                scaled.recycle();
+            }
+            source.recycle();
+            return true;
+        } catch (Throwable e) {
+            FileLog.e("QuickButtons: не вдалося зберегти картинку кнопки");
+            return false;
+        } finally {
+            try { if (in != null) in.close(); } catch (Throwable ignored) { }
+            try { if (out != null) out.close(); } catch (Throwable ignored) { }
+        }
+    }
+
+    public static void clearImage() {
+        try {
+            final java.io.File file = getImage();
+            if (file != null) {
+                file.delete();
+            }
+        } catch (Throwable ignored) {
+        }
+    }
 }

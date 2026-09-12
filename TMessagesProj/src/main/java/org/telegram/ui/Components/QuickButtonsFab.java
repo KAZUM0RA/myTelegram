@@ -91,17 +91,38 @@ public class QuickButtonsFab extends FrameLayout {
         final int size = QuickButtons.getSize();
         setBackground(Theme.createSimpleSelectorCircleDrawable(dp(size), background, pressed));
 
+        // Порядок важливий: власна картинка перекриває емодзі, емодзі —
+        // типову стрілку. Так у налаштуваннях лишається один зрозумілий
+        // вибір «що показувати», а не три прапорці, які можуть суперечити.
+        final java.io.File image = QuickButtons.getImage();
         final String emoji = QuickButtons.getEmoji();
-        if (TextUtils.isEmpty(emoji)) {
+        if (image != null) {
             icon.setVisibility(VISIBLE);
-            icon.setColorFilter(Theme.getColor(Theme.key_chats_actionIcon));
+            icon.setColorFilter(null);
+            icon.setScaleType(ImageView.ScaleType.CENTER_CROP);
+            icon.setImageBitmap(android.graphics.BitmapFactory.decodeFile(image.getAbsolutePath()));
             emojiView.setVisibility(GONE);
-        } else {
+        } else if (!TextUtils.isEmpty(emoji)) {
             icon.setVisibility(GONE);
             emojiView.setVisibility(VISIBLE);
             emojiView.setText(emoji);
             emojiView.setTextSize(android.util.TypedValue.COMPLEX_UNIT_DIP, size * 0.45f);
+        } else {
+            icon.setVisibility(VISIBLE);
+            icon.setScaleType(ImageView.ScaleType.CENTER);
+            icon.setImageResource(R.drawable.msg_send);
+            icon.setColorFilter(Theme.getColor(Theme.key_chats_actionIcon));
+            emojiView.setVisibility(GONE);
         }
+        // Картинку обрізаємо колом — кнопка кругла, і квадратне фото в ній
+        // виглядало б випадковим.
+        setClipToOutline(true);
+        setOutlineProvider(new android.view.ViewOutlineProvider() {
+            @Override
+            public void getOutline(View view, android.graphics.Outline outline) {
+                outline.setOval(0, 0, view.getWidth(), view.getHeight());
+            }
+        });
 
         setAlpha(QuickButtons.getAlphaPercent() / 100f);
 

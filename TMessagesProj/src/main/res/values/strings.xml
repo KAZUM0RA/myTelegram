@@ -45,6 +45,8 @@
     <string name="QuickButtonsSendNow">Send immediately</string>
     <string name="QuickButtonsAppearance">Button look</string>
     <string name="QuickButtonsAppearanceInfo">The look is shared across all chats — it is the same button, only the list differs.</string>
+    <string name="QuickButtonsImageOwn">Own picture</string>
+    <string name="QuickButtonsImageFailed">Could not use that picture</string>
     <string name="QuickButtonsColor">Colour</string>
     <string name="QuickButtonsColorTheme">As in theme</string>
     <string name="QuickButtonsColorOwn">Own colour</string>

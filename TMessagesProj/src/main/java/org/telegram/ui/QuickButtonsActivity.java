@@ -12,6 +12,7 @@ import android.text.InputType;
 import android.text.TextUtils;
 import android.view.Gravity;
 import android.view.View;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 
@@ -97,10 +98,25 @@ public class QuickButtonsActivity extends BaseFragment {
         appearance.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
         root.addView(appearance);
 
-        colorCell = new TextSettingsCell(context);
-        colorCell.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
-        colorCell.setOnClickListener(v -> pickColor());
-        root.addView(colorCell);
+        // Живий перегляд: без нього вибір кольору й розміру — гра наосліп.
+        previewHolder = new FrameLayout(context);
+        previewHolder.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+        preview = new org.telegram.ui.Components.QuickButtonsFab(context);
+        previewHolder.addView(preview, LayoutHelper.createFrame(
+                QuickButtons.getSize(), QuickButtons.getSize(), Gravity.CENTER, 0, 16, 0, 16));
+        root.addView(previewHolder, LayoutHelper.createLinear(
+                LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+
+        // Палітра кружечками, а не шістнадцятковими кодами: за «#4E8FE0»
+        // неможливо зрозуміти, який це колір, доки не побачиш.
+        swatches = new LinearLayout(context);
+        swatches.setOrientation(LinearLayout.HORIZONTAL);
+        swatches.setGravity(Gravity.CENTER);
+        swatches.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+        swatches.setPadding(0, dp(4), 0, dp(14));
+        root.addView(swatches, LayoutHelper.createLinear(
+                LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+        buildSwatches(context);
 
         emojiCell = new TextSettingsCell(context);
         emojiCell.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
@@ -223,47 +239,87 @@ public class QuickButtonsActivity extends BaseFragment {
 
     // ── Вигляд кнопки ────────────────────────────────────────────────────
 
-    private TextSettingsCell colorCell, emojiCell, sizeCell, alphaCell;
+    private TextSettingsCell emojiCell, sizeCell, alphaCell;
+    private FrameLayout previewHolder;
+    private org.telegram.ui.Components.QuickButtonsFab preview;
+    private LinearLayout swatches;
+
+    /** Кружечки палітри. Обраний позначаємо обідком. */
+    private void buildSwatches(Context context) {
+        swatches.removeAllViews();
+        final int active = QuickButtons.getColor();
+        for (int color : QuickButtons.COLORS) {
+            final View dot = new View(context);
+            final int shown = color == QuickButtons.COLOR_THEME
+                    ? Theme.getColor(Theme.key_chats_actionBackground) : color;
+            dot.setBackground(Theme.createSimpleSelectorCircleDrawable(dp(30), shown, shown));
+            if (color == active) {
+                dot.setScaleX(1.25f);
+                dot.setScaleY(1.25f);
+            }
+            dot.setOnClickListener(v -> {
+                QuickButtons.setColor(color);
+                buildSwatches(context);
+                appearanceChanged();
+            });
+            swatches.addView(dot, LayoutHelper.createLinear(30, 30, 6, 6, 6, 6));
+        }
+    }
 
     private void updateAppearanceRows() {
-        if (colorCell == null) {
+        if (emojiCell == null) {
             return;
         }
-        final int color = QuickButtons.getColor();
-        colorCell.setTextAndValue(getString(R.string.QuickButtonsColor),
-                getString(color == QuickButtons.COLOR_THEME
-                        ? R.string.QuickButtonsColorTheme : R.string.QuickButtonsColorOwn), true);
+        if (preview != null) {
+            preview.refresh();
+            preview.setVisibility(View.VISIBLE);
+            final android.view.ViewGroup.LayoutParams lp = preview.getLayoutParams();
+            if (lp != null) {
+                lp.width = dp(QuickButtons.getSize());
+                lp.height = dp(QuickButtons.getSize());
+                preview.setLayoutParams(lp);
+            }
+        }
         final String emoji = QuickButtons.getEmoji();
         emojiCell.setTextAndValue(getString(R.string.QuickButtonsEmoji),
-                TextUtils.isEmpty(emoji) ? getString(R.string.QuickButtonsEmojiNone) : emoji, true);
+                QuickButtons.getImage() != null ? getString(R.string.QuickButtonsImageOwn)
+                        : TextUtils.isEmpty(emoji) ? getString(R.string.QuickButtonsEmojiNone) : emoji,
+                true);
         sizeCell.setTextAndValue(getString(R.string.QuickButtonsSize),
                 QuickButtons.getSize() + " dp", true);
         alphaCell.setTextAndValue(getString(R.string.QuickButtonsAlpha),
                 QuickButtons.getAlphaPercent() + "%", false);
     }
 
-    private void pickColor() {
+    /** Вибір значка: типовий, емодзі або власна картинка. */
+    private void pickEmoji() {
         final Context context = getParentActivity();
         if (context == null) {
             return;
         }
-        final CharSequence[] names = new CharSequence[QuickButtons.COLORS.length];
-        for (int i = 0; i < QuickButtons.COLORS.length; i++) {
-            names[i] = QuickButtons.COLORS[i] == QuickButtons.COLOR_THEME
-                    ? getString(R.string.QuickButtonsColorTheme)
-                    : String.format("#%06X", QuickButtons.COLORS[i] & 0xFFFFFF);
-        }
+        final CharSequence[] options = {
+                getString(R.string.QuickButtonsEmojiNone),
+                getString(R.string.QuickButtonsEmoji),
+                getString(R.string.QuickButtonsImageOwn),
+        };
         new AlertDialog.Builder(context)
-                .setTitle(getString(R.string.QuickButtonsColor))
-                .setItems(names, (dialog, which) -> {
-                    QuickButtons.setColor(QuickButtons.COLORS[which]);
-                    appearanceChanged();
+                .setTitle(getString(R.string.QuickButtonsEmoji))
+                .setItems(options, (dialog, which) -> {
+                    if (which == 0) {
+                        QuickButtons.setEmoji("");
+                        QuickButtons.clearImage();
+                        appearanceChanged();
+                    } else if (which == 1) {
+                        askEmoji();
+                    } else {
+                        pickImage();
+                    }
                 })
                 .setNegativeButton(getString(R.string.Cancel), null)
                 .show();
     }
 
-    private void pickEmoji() {
+    private void askEmoji() {
         final Context context = getParentActivity();
         if (context == null) {
             return;
@@ -280,17 +336,45 @@ public class QuickButtonsActivity extends BaseFragment {
                 .setTitle(getString(R.string.QuickButtonsEmoji))
                 .setView(container)
                 .setPositiveButton(getString(R.string.Save), (dialog, which) -> {
+                    // Емодзі й картинка виключають одне одного: лишити обидва
+                    // означало б мовчазне правило «картинка головніша».
+                    QuickButtons.clearImage();
                     QuickButtons.setEmoji(editText.getText().toString());
-                    appearanceChanged();
-                })
-                // Порожній значок — це не «скасувати», а окремий вибір:
-                // повернутися до типової стрілки.
-                .setNeutralButton(getString(R.string.QuickButtonsEmojiNone), (dialog, which) -> {
-                    QuickButtons.setEmoji("");
                     appearanceChanged();
                 })
                 .setNegativeButton(getString(R.string.Cancel), null)
                 .show();
+    }
+
+    private static final int REQUEST_IMAGE = 4821;
+
+    private void pickImage() {
+        try {
+            final android.content.Intent intent =
+                    new android.content.Intent(android.content.Intent.ACTION_GET_CONTENT);
+            intent.setType("image/*");
+            startActivityForResult(intent, REQUEST_IMAGE);
+        } catch (Throwable e) {
+            BulletinFactory.of(this)
+                    .createErrorBulletin(getString(R.string.QuickButtonsImageFailed)).show();
+        }
+    }
+
+    @Override
+    public void onActivityResultFragment(int requestCode, int resultCode, android.content.Intent data) {
+        if (requestCode != REQUEST_IMAGE) {
+            return;
+        }
+        if (resultCode != android.app.Activity.RESULT_OK || data == null || data.getData() == null) {
+            return;
+        }
+        if (QuickButtons.setImage(data.getData())) {
+            QuickButtons.setEmoji("");
+            appearanceChanged();
+        } else {
+            BulletinFactory.of(this)
+                    .createErrorBulletin(getString(R.string.QuickButtonsImageFailed)).show();
+        }
     }
 
     /** @param size {@code true} — розмір, {@code false} — прозорість. */
@@ -344,8 +428,17 @@ public class QuickButtonsActivity extends BaseFragment {
         final EditTextBoldCursor editText = new EditTextBoldCursor(context);
         editText.setTextSize(android.util.TypedValue.COMPLEX_UNIT_DIP, 16);
         editText.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
-        editText.setHintTextColor(Theme.getColor(Theme.key_dialogTextHint));
+        // Саме setHintColor, а не setHintTextColor: EditTextBoldCursor малює
+        // власний підпис, і стандартний метод його не фарбує — через це поля
+        // виглядали як порожнє місце, без жодної підказки.
+        editText.setHintColor(Theme.getColor(Theme.key_dialogTextHint));
         editText.setHintText(hint);
+        // Лінія під полем: без неї не видно навіть того, що тут можна писати.
+        editText.setLineColors(
+                Theme.getColor(Theme.key_dialogInputField),
+                Theme.getColor(Theme.key_dialogInputFieldActivated),
+                Theme.getColor(Theme.key_text_RedRegular));
+        editText.setPadding(0, dp(4), 0, dp(4));
         editText.setBackgroundDrawable(null);
         editText.setInputType(InputType.TYPE_CLASS_TEXT
                 | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
